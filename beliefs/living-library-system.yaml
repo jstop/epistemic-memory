@@ -1,0 +1,49 @@
+beliefs:
+- id: library-home
+  claim: The canonical belief store and MCP server live at ~/workspace/epistemic/memory (local git repo)
+  method: observed
+  volatility: structural
+  cluster: Living library system
+  kind: project
+  anchor: test -f ~/workspace/epistemic/memory/server.py && echo present || echo absent
+  anchor_cost: cheap
+  links: []
+  observed_at: '2026-08-19'
+  events:
+  - at: '2026-08-19'
+    op: formed
+    method: observed
+    note: created 2026-08-19, this session
+- id: library-surfaces
+  claim: Only Claude Code (and optionally Claude Desktop) are wired to the living library; claude.ai and
+    ChatGPT connectors are not yet built
+  method: observed
+  volatility: status
+  cluster: Living library system
+  kind: project
+  anchor: null
+  anchor_cost: null
+  links:
+  - library-home
+  observed_at: '2026-08-19'
+  events:
+  - at: '2026-08-19'
+    op: formed
+    method: observed
+    note: local-first scope decision 2026-08-19
+- id: library-design-doc
+  claim: The living library design lineage is in ~/.claude/plans/i-don-t-think-we-re-recursive-blossom.md
+  method: observed
+  volatility: structural
+  cluster: Living library system
+  kind: project
+  anchor: test -f ~/.claude/plans/i-don-t-think-we-re-recursive-blossom.md && echo present || echo absent
+  anchor_cost: cheap
+  links:
+  - library-home
+  observed_at: '2026-08-19'
+  events:
+  - at: '2026-08-19'
+    op: formed
+    method: observed
+    note: captured via MCP
