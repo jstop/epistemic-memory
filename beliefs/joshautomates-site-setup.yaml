@@ -1,0 +1,91 @@
+# Migrated 2026-07-27 from blob memory `joshautomates-site-setup.md`.
+# Provenance reconstructed at migration. All beliefs UNVERIFIED until re-checked.
+beliefs:
+  - id: josh-repo
+    claim: "joshautomates.com is managed from ~/workspace/joshautomates.com (clone of github.com:jstop/homepage)"
+    cluster: "joshautomates.com site"
+    kind: project
+    method: observed
+    observed_at: 2026-06-07
+    volatility: structural
+    anchor: "git -C ~/workspace/joshautomates.com remote -v"
+    anchor_cost: cheap
+    events:
+      - {at: 2026-06-07, op: formed, method: observed, note: "provenance reconstructed at migration from blob"}
+
+  - id: josh-setup-date
+    claim: "The joshautomates.com local setup was done on 2026-06-07"
+    cluster: "joshautomates.com site"
+    kind: project
+    method: observed
+    observed_at: 2026-06-07
+    volatility: historical
+    anchor: null
+    anchor_cost: null
+    links: [josh-repo]
+    events:
+      - {at: 2026-06-07, op: formed, method: observed, note: "immutable past event"}
+
+  - id: josh-deploy-pipeline
+    claim: "public/ deploys to s3://joshautomates.com via GitHub Actions OIDC on push to main"
+    cluster: "joshautomates.com site"
+    kind: project
+    method: observed
+    observed_at: 2026-06-07
+    volatility: structural
+    anchor: "ls ~/workspace/joshautomates.com/.github/workflows/ 2>/dev/null"
+    anchor_cost: cheap
+    links: [josh-repo]
+    events:
+      - {at: 2026-06-07, op: formed, method: observed, note: "provenance reconstructed at migration from blob"}
+
+  - id: josh-oidc-role
+    claim: "The deploy uses OIDC role github-actions-joshautomates-deploy in AWS account 523888557587"
+    cluster: "joshautomates.com site"
+    kind: project
+    method: observed
+    observed_at: 2026-06-07
+    volatility: structural
+    anchor: null
+    anchor_cost: expensive
+    links: [josh-deploy-pipeline]
+    events:
+      - {at: 2026-06-07, op: formed, method: observed, note: "AWS-side; expensive to re-verify"}
+
+  - id: josh-cloudfront
+    claim: "The deploy invalidates CloudFront distribution E3W20GECTCPE4C"
+    cluster: "joshautomates.com site"
+    kind: project
+    method: observed
+    observed_at: 2026-06-07
+    volatility: structural
+    anchor: null
+    anchor_cost: expensive
+    links: [josh-deploy-pipeline]
+    events:
+      - {at: 2026-06-07, op: formed, method: observed, note: "provenance reconstructed at migration from blob"}
+
+  - id: josh-dev-server
+    claim: "`make dev` serves joshautomates.com locally on port 8090"
+    cluster: "joshautomates.com site"
+    kind: project
+    method: observed
+    observed_at: 2026-06-07
+    volatility: structural
+    anchor: "grep -n 8090 ~/workspace/joshautomates.com/Makefile 2>/dev/null || echo 'no match'"
+    anchor_cost: cheap
+    links: [josh-repo]
+    events:
+      - {at: 2026-06-07, op: formed, method: observed, note: "provenance reconstructed at migration from blob"}
+
+  - id: josh-subdomains
+    claim: "Subdomains osmio./vault./pods. are managed separately in ~/claude_fresh/osmio-poc/infra/"
+    cluster: "joshautomates.com site"
+    kind: project
+    method: observed
+    observed_at: 2026-06-07
+    volatility: structural
+    anchor: "test -d ~/claude_fresh/osmio-poc/infra && echo present || echo absent"
+    anchor_cost: cheap
+    events:
+      - {at: 2026-06-07, op: formed, method: observed, note: "provenance reconstructed at migration from blob"}
