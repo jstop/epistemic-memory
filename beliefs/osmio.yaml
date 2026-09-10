@@ -1,0 +1,54 @@
+# AUTO-GENERATED projection of canonical.db — DO NOT HAND-EDIT.
+# Edits here never become canonical state; write through the MCP tools or
+# the engine CLI, then regenerate with: python engine.py project
+generated: true
+beliefs:
+- id: chat-identity-consistency-paper
+  claim: 'Josh has a research-paper direction: ''What is the minimum consistency required for digital
+    identity?'' — classifying identity operations by weakest sufficient consistency class, plus a compositional
+    follow-up'
+  method: asserted
+  volatility: status
+  cluster: Osmio
+  observed_at: '2026-08-03'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: chat-osmio-keri-stack
+  claim: Josh is prototyping Osmio's identity layer on KERI/ACDC and evaluating the Cardano Foundation's
+    self-hostable Veridian wallet as the substrate
+  method: asserted
+  volatility: status
+  cluster: Osmio
+  observed_at: '2026-08-21'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: chat-osmio-mission
+  claim: 'Osmio is Josh''s central project: grassroots, self-sovereign identity infrastructure aimed at
+    accountable coordination and ''equal identity under one system of identity'''
+  method: asserted
+  volatility: preference
+  cluster: Osmio
+  observed_at: '2026-08-15'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: chat-personal-ai-keri-continuity
+  claim: 'Josh wants his personal AI system anchored to KERI identity: his inputs vs AI outputs distinguishable
+    and signed, with explicit categories separating private working thought from productionized claims'
+  method: asserted
+  volatility: preference
+  cluster: Osmio
+  observed_at: '2026-08-21'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed

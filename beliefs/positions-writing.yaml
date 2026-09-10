@@ -15,6 +15,19 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+- id: chat-epistemic-traceability-position
+  claim: 'Josh''s public position (LinkedIn, Jul 2026): epistemic traceability is the necessary future
+    of aligned AI, and context engineering is a question of epistemic imports; he built his first epistemic
+    workbench ~mid-2025 from debate-mapping research'
+  method: asserted
+  volatility: preference
+  cluster: Positions & writing
+  observed_at: '2026-07-14'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
 - id: chat-mind-simulation-position
   claim: Josh is developing a philosophical position connecting mind-as-simulation, shared moral agency,
     and his epistemic-network work

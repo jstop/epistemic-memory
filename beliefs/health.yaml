@@ -1,0 +1,65 @@
+# AUTO-GENERATED projection of canonical.db — DO NOT HAND-EDIT.
+# Edits here never become canonical state; write through the MCP tools or
+# the engine CLI, then regenerate with: python engine.py project
+generated: true
+beliefs:
+- id: chat-health-research
+  claim: Josh researches histamine intolerance and long-COVID-adjacent health topics (neuromuscular medicine,
+    DAO enzyme, low-histamine diet) for his own health management
+  method: asserted
+  volatility: preference
+  cluster: Health
+  observed_at: '2026-07-21'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: chat-long-covid
+  claim: 'Josh has long COVID: multi-year post-COVID symptoms (frequent illness, inflammation, peripheral
+    vision loss in the left eye noted 2026), managed via the VA plus a long-COVID specialist following
+    a Klimas-community protocol (cycled isoprinosine/Imunovir)'
+  method: asserted
+  volatility: structural
+  cluster: Health
+  observed_at: '2026-07-05'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: chat-no-alcohol
+  claim: Josh does not drink alcohol
+  method: asserted
+  volatility: preference
+  cluster: Health
+  observed_at: '2026-07-01'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: chat-va-care
+  claim: Josh receives medical care through the VA (attended a VA appointment in the Dallas area, July
+    2026)
+  method: asserted
+  volatility: structural
+  cluster: Health
+  observed_at: '2026-07-30'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: chat-va-deerfield
+  claim: Josh's home VA facility is Deerfield Beach, FL; on the road he uses the VA traveling-veterans
+    program, with a separate primary handling his long COVID
+  method: asserted
+  volatility: structural
+  cluster: Health
+  observed_at: '2026-07-14'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed

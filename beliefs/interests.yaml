@@ -3,6 +3,42 @@
 # the engine CLI, then regenerate with: python engine.py project
 generated: true
 beliefs:
+- id: chat-intentional-communities
+  claim: Josh is interested in intentional-living / sovereignty-oriented communities (Venus Project etc.)
+    and has looked into short stays at ones along his route
+  method: asserted
+  volatility: preference
+  cluster: Interests
+  observed_at: '2026-08-03'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: chat-jewish-practice
+  claim: Josh engages with Jewish religious life while traveling — seeking Shabbat services to attend,
+    studying texts, tradition, and Hebrew
+  method: asserted
+  volatility: preference
+  cluster: Interests
+  observed_at: '2026-07-17'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: chat-jonathan-sacks-influence
+  claim: 'Rabbi Jonathan Sacks is a significant intellectual influence on Josh: he read Sacks''s Morality
+    and felt real grief on learning Sacks died in 2020, calling him ''closer than most to the way'''
+  method: asserted
+  volatility: preference
+  cluster: Interests
+  observed_at: '2026-08-05'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
 - id: chat-mideast-history-study
   claim: Josh studies Israel-Palestine history and early Islamic history in depth through extended AI
     conversations
@@ -10,6 +46,18 @@ beliefs:
   volatility: preference
   cluster: Interests
   observed_at: '2026-09-09'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: chat-standup-open-mics
+  claim: Josh performs at stand-up comedy open mics while traveling (Boston, Philadelphia, Gatlinburg,
+    and earlier Florida/Little Rock stops)
+  method: asserted
+  volatility: preference
+  cluster: Interests
+  observed_at: '2026-09-01'
   contested: false
   unsupported: false
   events:

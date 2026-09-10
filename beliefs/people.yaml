@@ -1,0 +1,63 @@
+# AUTO-GENERATED projection of canonical.db — DO NOT HAND-EDIT.
+# Edits here never become canonical state; write through the MCP tools or
+# the engine CLI, then regenerate with: python engine.py project
+generated: true
+beliefs:
+- id: chat-breakup-2026
+  claim: Josh and his girlfriend (Liz) broke up around mid-2026; he travels alone now (the dog previously
+    associated with him was hers)
+  method: asserted
+  volatility: historical
+  cluster: People
+  observed_at: '2026-07-20'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: chat-dad-model-y
+  claim: Josh's dad drives a Tesla Model Y (no factory tow hitch)
+  method: asserted
+  volatility: structural
+  cluster: People
+  observed_at: '2026-08-24'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: chat-mobile-friend-support
+  claim: Josh is helping a homeless friend in Mobile, Alabama with housing (an abandoned property on Ralston
+    Rd), utilities, and ID/name-change paperwork
+  method: asserted
+  volatility: status
+  cluster: People
+  observed_at: '2026-08-16'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: chat-osmio-collaborators
+  claim: Josh collaborates on the Osmio identity stack with Kevin (nDgoRose, undecillion.com) and Wes,
+    including exploring Utah SB0260/SB0275 state endorsement
+  method: asserted
+  volatility: status
+  cluster: People
+  observed_at: '2026-08-17'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: chat-sister-dallas
+  claim: Josh has a sister, located in the Dallas area as of July 2026
+  method: asserted
+  volatility: structural
+  cluster: People
+  observed_at: '2026-07-10'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
