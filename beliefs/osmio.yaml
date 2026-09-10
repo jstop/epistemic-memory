@@ -3,6 +3,18 @@
 # the engine CLI, then regenerate with: python engine.py project
 generated: true
 beliefs:
+- id: chat-accountable-pseudonymity
+  claim: 'Josh''s accountable-pseudonymity model: individuals hold a root identity and fork scoped ''license
+    plate'' identifiers — pseudonymous in context but traceable to the attested root under due process'
+  method: asserted
+  volatility: preference
+  cluster: Osmio
+  observed_at: '2026-05-31'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
 - id: chat-identity-consistency-paper
   claim: 'Josh has a research-paper direction: ''What is the minimum consistency required for digital
     identity?'' — classifying identity operations by weakest sufficient consistency class, plus a compositional
@@ -11,6 +23,43 @@ beliefs:
   volatility: status
   cluster: Osmio
   observed_at: '2026-08-03'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: chat-osmio-charter
+  claim: Josh describes Osmio as a digital municipality chartered at the ITU in Geneva in 2005 (out of
+    the ITU World e-trust initiative, despite UN rejection) — a duly constituted public authority; he
+    was introduced to it and champions it rather than having founded it
+  method: asserted
+  volatility: structural
+  cluster: Osmio
+  observed_at: '2026-06-19'
+  contested: false
+  unsupported: false
+  claim_history:
+  - at: '2026-09-10'
+    claim: Josh describes Osmio as a pre-existing 'duly constituted public authority chartered at the
+      ITU in Geneva' (from the ITU World e-trust initiative, despite UN rejection); he was introduced
+      to it and acts as an early adopter/ambassador rather than its founder
+  - at: '2026-09-10'
+    claim: Josh describes Osmio as a digital municipality chartered at the ITU in Geneva in 2005 (out
+      of the ITU World e-trust initiative, despite UN rejection) — a duly constituted public authority;
+      he was introduced to it and champions it rather than having founded it
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+  - at: '2026-09-10'
+    op: BeliefRestated
+- id: chat-osmio-keri-position
+  claim: 'Josh''s architectural position: KERI is the cryptographic substrate (keys, rotation, recovery,
+    deliberately governance-silent) and Osmio supplies the accountable, chartered governance layer on
+    top — complementary, not competing'
+  method: asserted
+  volatility: preference
+  cluster: Osmio
+  observed_at: '2026-06-08'
   contested: false
   unsupported: false
   events:
@@ -40,6 +89,55 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+- id: chat-osmio-origin-story
+  claim: 'Josh''s path to Osmio, in his words: recognizing the existential crisis of information technology
+    powerful enough to manipulate human agency at scale -> deciding to use that technology to empower
+    himself (AI enablement, quantified self, personal data) -> My Data Global -> introduced to Osmio when
+    Wes''s assistant reached out'
+  method: asserted
+  volatility: historical
+  cluster: Osmio
+  observed_at: '2026-06-04'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: chat-osmio-recruiting
+  claim: Josh maintains an Osmio recruiting list — Iddo Drori, Grace (Rebecca) Rachmany, Kaliya Young,
+    Doc Searls — targeting Wes's 'non-naive collegial' profile as the team archetype
+  method: asserted
+  volatility: status
+  cluster: Osmio
+  observed_at: '2026-05-18'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: chat-osmio-role
+  claim: Josh is Osmio's Director of Communications (announced his role ~June 2026)
+  method: asserted
+  volatility: structural
+  cluster: Osmio
+  observed_at: '2026-06-04'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: chat-osmio-wedge-vpp
+  claim: 'Josh''s Osmio adoption-wedge direction: sovereign infrastructure via solar virtual power plants
+    and mesh networks, including exploring a solar business for Osmio'
+  method: asserted
+  volatility: status
+  cluster: Osmio
+  observed_at: '2026-06-25'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
 - id: chat-personal-ai-keri-continuity
   claim: 'Josh wants his personal AI system anchored to KERI identity: his inputs vs AI outputs distinguishable
     and signed, with explicit categories separating private working thought from productionized claims'
@@ -47,6 +145,42 @@ beliefs:
   volatility: preference
   cluster: Osmio
   observed_at: '2026-08-21'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: chat-reliableid-domain
+  claim: Josh runs a reliableid.com Zoho mail identity (joshua.stein@reliableid.com) for the identity/Osmio
+    work
+  method: asserted
+  volatility: structural
+  cluster: Osmio
+  observed_at: '2026-06-08'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: chat-ssi-outreach
+  claim: Josh actively engages SSI/identity thought leaders in public discourse to position Osmio — replies
+    and outreach involving Eric Pol, Christopher Allen, Phil Windley's synthesis, and Kaliya Young
+  method: asserted
+  volatility: status
+  cluster: Osmio
+  observed_at: '2026-05-20'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: chat-tedx-ambition
+  claim: Josh intends to give TEDx-style talks on the Osmio/identity thesis and had a stage-ready piece
+    drafted (May 2026), planning to find and sign up for speaking opportunities
+  method: asserted
+  volatility: status
+  cluster: Osmio
+  observed_at: '2026-05-19'
   contested: false
   unsupported: false
   events:

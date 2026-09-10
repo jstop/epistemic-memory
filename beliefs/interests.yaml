@@ -3,6 +3,18 @@
 # the engine CLI, then regenerate with: python engine.py project
 generated: true
 beliefs:
+- id: chat-99pi-reference
+  claim: Josh cites the 99% Invisible 'Citizen of the World' podcast episode as a signed reference for
+    what he's about — much of his thinking converges with it
+  method: asserted
+  volatility: preference
+  cluster: Interests
+  observed_at: '2026-06-06'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
 - id: chat-intentional-communities
   claim: Josh is interested in intentional-living / sovereignty-oriented communities (Venus Project etc.)
     and has looked into short stays at ones along his route
@@ -46,6 +58,29 @@ beliefs:
   volatility: preference
   cluster: Interests
   observed_at: '2026-09-09'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: chat-scuba
+  claim: Josh scuba dives (previously certified; looked into a refresher course in Key Largo, May 2026)
+  method: asserted
+  volatility: preference
+  cluster: Interests
+  observed_at: '2026-05-24'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: chat-slam-poetry
+  claim: Josh writes and performs slam poetry alongside stand-up, working themes of Jewish identity, inherited
+    trauma, and decolonization
+  method: asserted
+  volatility: preference
+  cluster: Interests
+  observed_at: '2026-06-11'
   contested: false
   unsupported: false
   events:

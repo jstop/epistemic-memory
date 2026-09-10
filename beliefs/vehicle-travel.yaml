@@ -40,17 +40,26 @@ beliefs:
   - at: '2026-09-10'
     op: BeliefFormed
 - id: chat-florida-residency-end
-  claim: Josh was a Florida resident (apartment) until becoming nomadic around August 2026; his car registration
-    remained Florida-based
+  claim: Josh's Florida apartment ended around May-June 2026 (deposit dispute over nail holes in July;
+    Airbnb-hopping in South Florida through late May); his car registration and VA care remained Florida-based
   method: asserted
   volatility: historical
   cluster: Vehicle & travel
   observed_at: '2026-08-21'
   contested: false
   unsupported: false
+  claim_history:
+  - at: '2026-09-10'
+    claim: Josh was a Florida resident (apartment) until becoming nomadic around August 2026; his car
+      registration remained Florida-based
+  - at: '2026-09-10'
+    claim: Josh's Florida apartment ended around May-June 2026 (deposit dispute over nail holes in July;
+      Airbnb-hopping in South Florida through late May); his car registration and VA care remained Florida-based
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+  - at: '2026-09-10'
+    op: BeliefRestated
 - id: chat-model3-carliving
   claim: 'Josh is outfitting his Model 3 for car living: electric-only cooking and water systems, currently
     evaluating a power station'

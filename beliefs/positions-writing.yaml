@@ -28,6 +28,19 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+- id: chat-homepage-hello-world
+  claim: 'Josh''s personal-site homepage thesis (joshautomates.com): ''Hello, World'' — people have been
+    second-class citizens online and should be first-class, under their own authority; Osmio work is the
+    site''s center of gravity'
+  method: asserted
+  volatility: status
+  cluster: Positions & writing
+  observed_at: '2026-06-07'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
 - id: chat-mind-simulation-position
   claim: Josh is developing a philosophical position connecting mind-as-simulation, shared moral agency,
     and his epistemic-network work

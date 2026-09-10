@@ -4,17 +4,27 @@
 generated: true
 beliefs:
 - id: chat-breakup-2026
-  claim: Josh and his girlfriend (Liz) broke up around mid-2026; he travels alone now (the dog previously
-    associated with him was hers)
+  claim: Josh's ~2-year relationship with Liz (age 40) ended around early June 2026 — she ended it; combined
+    with the job loss it precipitated the nomadic trip; the dog earlier associated with Josh was hers
   method: asserted
   volatility: historical
   cluster: People
   observed_at: '2026-07-20'
   contested: false
   unsupported: false
+  claim_history:
+  - at: '2026-09-10'
+    claim: Josh and his girlfriend (Liz) broke up around mid-2026; he travels alone now (the dog previously
+      associated with him was hers)
+  - at: '2026-09-10'
+    claim: Josh's ~2-year relationship with Liz (age 40) ended around early June 2026 — she ended it;
+      combined with the job loss it precipitated the nomadic trip; the dog earlier associated with Josh
+      was hers
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+  - at: '2026-09-10'
+    op: BeliefRestated
 - id: chat-dad-model-y
   claim: Josh's dad drives a Tesla Model Y (no factory tow hitch)
   method: asserted
@@ -26,18 +36,65 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+- id: chat-jewish-identity
+  claim: Josh is Jewish — grew up in the suburbs going to Jewish camp, describes a family with hidden
+    traumas and dysfunction beneath a safe surface — and works through that identity in his writing
+  method: asserted
+  volatility: structural
+  cluster: People
+  observed_at: '2026-06-12'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: chat-job-loss-2026
+  claim: 'Josh was let go from Insperity in mid-May 2026 (the second firing that year from the same employer;
+    offered 2-week severance against a release of claims) — combined with the breakup it precipitated
+    the nomadic trip; his read: they ''didn''t want competent, they wanted compliant'''
+  method: asserted
+  volatility: historical
+  cluster: People
+  observed_at: '2026-06-09'
+  contested: false
+  unsupported: false
+  claim_history:
+  - at: '2026-09-10'
+    claim: 'Josh was fired twice in 2026 from the same employer (second firing ~June 2026), shortly before
+      the breakup — the two events precipitated the nomadic road trip; his read: the job ''didn''t want
+      competent, they wanted compliant'''
+  - at: '2026-09-10'
+    claim: 'Josh was let go from Insperity in mid-May 2026 (the second firing that year from the same
+      employer; offered 2-week severance against a release of claims) — combined with the breakup it precipitated
+      the nomadic trip; his read: they ''didn''t want competent, they wanted compliant'''
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+  - at: '2026-09-10'
+    op: BeliefRestated
 - id: chat-mobile-friend-support
-  claim: Josh is helping a homeless friend in Mobile, Alabama with housing (an abandoned property on Ralston
-    Rd), utilities, and ID/name-change paperwork
+  claim: 'Josh supports Leandra, a homeless 19-year-old in Mobile, AL (two children living with godparents):
+    emergency housing, GED program, bus pass, IDs/name-change paperwork, and an abandoned-property housing
+    idea'
   method: asserted
   volatility: status
   cluster: People
   observed_at: '2026-08-16'
   contested: false
   unsupported: false
+  claim_history:
+  - at: '2026-09-10'
+    claim: Josh is helping a homeless friend in Mobile, Alabama with housing (an abandoned property on
+      Ralston Rd), utilities, and ID/name-change paperwork
+  - at: '2026-09-10'
+    claim: 'Josh supports Leandra, a homeless 19-year-old in Mobile, AL (two children living with godparents):
+      emergency housing, GED program, bus pass, IDs/name-change paperwork, and an abandoned-property housing
+      idea'
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+  - at: '2026-09-10'
+    op: BeliefRestated
 - id: chat-osmio-collaborators
   claim: Josh collaborates on the Osmio identity stack with Kevin (nDgoRose, undecillion.com) and Wes,
     including exploring Utah SB0260/SB0275 state endorsement
