@@ -1,37 +1,35 @@
 #!/usr/bin/env python3
-"""Epistemic Memory engine — canonical store logic.
+"""Epistemic Memory engine — read/logic layer over the canonical event log.
 
-The single source of truth for belief storage, stance computation, validation,
-verification, and reconciliation. Every surface (Claude Code, Claude Desktop,
-claude.ai, ChatGPT) reaches this through the MCP server in server.py; the CLI
-below is for maintenance.
+As of the v2 cutover, `canonical.db` (see substrate.py) is the single source of
+truth. Everything else — beliefs/*.yaml, events.jsonl, MEMORY.md — is a
+projection regenerated from canonical history. Hand-edits to projections never
+become canonical state; changes enter only through capture / verify /
+reconcile, which append canonical events.
 
-Design invariants (from the plan, "i-don-t-think-we-re-recursive-blossom"):
+Design invariants (v1 kept, v2 added):
   - a belief is never read naked: every read path returns it wearing its stance
-  - a belief is never written without `method` (the integrity firewall)
-  - a belief is never silently overwritten: changes append events
-  - confidence is a legible stance derived from coarse axes, not a float
+  - a belief is never written without `method` (the integrity firewall);
+    observed/asserted want evidence, derived/inferred want premises — a write
+    that cannot say where it came from is recorded explicitly `unsupported`
+  - a belief is never silently overwritten: every change is a canonical event
+  - confidence is a legible stance derived at read time, never stored as truth
+  - capture never blocks on retrieval, reconciliation, or projection failure
 """
 from __future__ import annotations
 
 import datetime as dt
-import glob
+import json
 import os
 import re
 import subprocess
+from pathlib import Path
 
 import yaml
 
-REPO_DIR = os.path.dirname(os.path.abspath(__file__))
-BELIEFS_DIR = os.environ.get("EPISTEMIC_BELIEFS_DIR", os.path.join(REPO_DIR, "beliefs"))
-INDEX_PATH = os.environ.get(
-    "EPISTEMIC_INDEX_PATH",
-    os.path.join(os.path.expanduser("~"), ".claude", "projects", "-Users-jstein", "memory", "MEMORY.md"),
-)
+from substrate import METHODS, VOLATILITIES, CanonicalLog, canonical_json
 
-REQUIRED = ("id", "claim", "method", "observed_at", "volatility")
-METHODS = ("observed", "asserted", "derived", "inferred")
-VOLATILITIES = ("historical", "structural", "preference", "metric", "status")
+REPO_DIR = os.path.dirname(os.path.abspath(__file__))
 
 HALF_LIFE_DAYS = {  # None => never decays
     "historical": None,
@@ -44,60 +42,123 @@ HALF_LIFE_DAYS = {  # None => never decays
 STANCE_ORDER = {"CONTESTED": 0, "SUSPECT": 1, "HYPOTHESIS": 2, "NOTE": 3, "RELY": 4}
 STANCE_EMOJI = {"CONTESTED": "🔴", "SUSPECT": "🟠", "HYPOTHESIS": "🔵", "NOTE": "🟡", "RELY": "🟢"}
 
+GENERATED_YAML_HEADER = (
+    "# AUTO-GENERATED projection of canonical.db — DO NOT HAND-EDIT.\n"
+    "# Edits here never become canonical state; write through the MCP tools or\n"
+    "# the engine CLI, then regenerate with: python engine.py project\n"
+)
+
+
+def _env(name: str, default: str) -> str:
+    return os.environ.get(name, default)
+
+
+def db_path() -> str:
+    return _env("EPISTEMIC_DB_PATH", os.path.join(REPO_DIR, "canonical.db"))
+
+
+def content_dir() -> str:
+    return _env("EPISTEMIC_CONTENT_DIR", os.path.join(REPO_DIR, "evidence_store"))
+
+
+def beliefs_dir() -> str:
+    return _env("EPISTEMIC_BELIEFS_DIR", os.path.join(REPO_DIR, "beliefs"))
+
+
+def events_jsonl_path() -> str:
+    return _env("EPISTEMIC_EVENTS_JSONL", os.path.join(REPO_DIR, "events.jsonl"))
+
+
+def index_path() -> str:
+    return _env(
+        "EPISTEMIC_INDEX_PATH",
+        os.path.join(os.path.expanduser("~"), ".claude", "projects", "-Users-jstein", "memory", "MEMORY.md"),
+    )
+
+
+_LOGS: dict[str, CanonicalLog] = {}
+
+
+def get_log() -> CanonicalLog:
+    path = db_path()
+    if path not in _LOGS:
+        _LOGS[path] = CanonicalLog(path, content_dir())
+    return _LOGS[path]
+
 
 def today() -> dt.date:
     return dt.date.today()
 
 
 def _as_date(v) -> dt.date | None:
-    if v is None:
+    if v in (None, ""):
         return None
     if isinstance(v, dt.date):
         return v
-    return dt.date.fromisoformat(str(v))
+    return dt.date.fromisoformat(str(v)[:10])
 
 
-# ------------------------------------------------------------------ store I/O
+# ------------------------------------------------------------------ views
 
-def _files() -> list[str]:
-    return sorted(glob.glob(os.path.join(BELIEFS_DIR, "*.yaml")))
+def _view(bid: str, b: dict, relationships: list[dict]) -> dict:
+    """Map a canonical-log belief into the flat dict shape the stance engine
+    and every read surface consume. Purely derived."""
+    restates = [h for h in b["claim_history"] if h["origin"] == "restated"]
+    links = sorted({r["object_id"] for r in relationships
+                    if r["subject_id"] == bid and r["rel"] == "DEPENDS_ON"})
+    dates = [d for d in (
+        (b.get("observed_at") or "")[:10],
+        (b.get("verified_at") or "")[:10],
+        (restates[-1]["at"][:10] if restates else ""),
+    ) if d]
+    return {
+        "id": bid,
+        "claim": b["claim"],
+        "method": b["method"],
+        "volatility": b["volatility"],
+        "cluster": b.get("cluster"),
+        "anchor": b.get("anchor"),
+        "anchor_cost": b.get("anchor_cost"),
+        "observed_at": (b.get("observed_at") or "")[:10] or None,
+        "verified_at": (b.get("verified_at") or "")[:10] or None,
+        "freshness_base": max(dates) if dates else None,
+        "contested": bool(b.get("contested")),
+        "retired": bool(b.get("retired")),
+        "retired_reason": b.get("retired_reason"),
+        "unsupported": bool(b.get("unsupported")),
+        "reconstructed": bool((b.get("metadata") or {}).get("reconstructed")),
+        "links": links,
+        "evidence_ids": list(b.get("evidence_ids") or []),
+        "premise_ids": list(b.get("premise_ids") or []),
+        "claim_history": b["claim_history"],
+        "events": [{"at": h["at"][:10], "op": h["event_type"]} for h in b["history"]],
+    }
 
 
-def load_all(strict: bool = False) -> list[tuple[dict, str]]:
+def load_all(include_retired: bool = False) -> list[tuple[dict, str]]:
+    """All beliefs as stance-ready views. Second tuple element kept for
+    backward compatibility (was the YAML path; now the canonical db path)."""
+    state = get_log().state()
     out = []
-    for path in _files():
-        try:
-            doc = yaml.safe_load(open(path)) or []
-            beliefs = doc.get("beliefs", []) if isinstance(doc, dict) else doc
-            for b in beliefs:
-                out.append((b, path))
-        except Exception:
-            if strict:
-                raise
+    for bid in sorted(state["beliefs"]):
+        v = _view(bid, state["beliefs"][bid], state["relationships"])
+        if v["retired"] and not include_retired:
+            continue
+        out.append((v, db_path()))
     return out
 
 
-def _rewrite(path: str, belief: dict) -> None:
-    doc = yaml.safe_load(open(path)) or []
-    beliefs = doc.get("beliefs", []) if isinstance(doc, dict) else doc
-    for i, bb in enumerate(beliefs):
-        if bb.get("id") == belief.get("id"):
-            beliefs[i] = belief
-    with open(path, "w") as fh:
-        yaml.safe_dump(doc, fh, sort_keys=False, allow_unicode=True, width=100)
-
-
-def find(belief_id: str) -> tuple[dict, str] | tuple[None, None]:
-    for b, path in load_all(strict=True):
-        if b.get("id") == belief_id:
-            return b, path
+def find(belief_id: str) -> tuple[dict | None, str | None]:
+    for v, path in load_all(include_retired=True):
+        if v["id"] == belief_id:
+            return v, path
     return None, None
 
 
 # ------------------------------------------------------------- stance engine
 
 def age_days(b: dict, ref: dt.date) -> int | None:
-    base = _as_date(b.get("verified_at")) or _as_date(b.get("observed_at"))
+    base = _as_date(b.get("freshness_base")) or _as_date(b.get("verified_at")) or _as_date(b.get("observed_at"))
     return None if base is None else (ref - base).days
 
 
@@ -142,9 +203,11 @@ def stamped(b: dict, ref: dt.date | None = None) -> dict:
         "volatility": b.get("volatility"),
         "freshness": "immutable" if bucket == "historical" else bucket,
         "age_days": a,
-        "observed_at": str(b.get("observed_at", "")),
-        "verified_at": str(b.get("verified_at", "")) or None,
+        "observed_at": b.get("observed_at") or "",
+        "verified_at": b.get("verified_at"),
         "contested": bool(b.get("contested")),
+        "unsupported": bool(b.get("unsupported")),
+        "reconstructed": bool(b.get("reconstructed")),
         "anchor": b.get("anchor"),
         "anchor_cost": b.get("anchor_cost"),
         "links": b.get("links", []),
@@ -165,7 +228,7 @@ def validate_belief(b: dict) -> list[str]:
     if not isinstance(b, dict):
         return ["belief is not a mapping"]
     tag = b.get("id", "?")
-    for f in REQUIRED:
+    for f in ("id", "claim", "method", "volatility"):
         if b.get(f) in (None, ""):
             problems.append(f"{tag}: missing required field '{f}'")
     if b.get("method") and b["method"] not in METHODS:
@@ -180,99 +243,137 @@ def validate_belief(b: dict) -> list[str]:
     return problems
 
 
-def validate_file(path: str) -> list[str]:
-    try:
-        doc = yaml.safe_load(open(path)) or []
-    except Exception as e:
-        return [f"unparseable YAML: {e}"]
-    beliefs = doc.get("beliefs", []) if isinstance(doc, dict) else doc
-    if not isinstance(beliefs, list):
-        return ["expected a list of beliefs"]
-    problems = []
-    for b in beliefs:
-        problems.extend(validate_belief(b))
-    return problems
-
-
 # ---------------------------------------------------------------- mutations
+#
+# All mutations append canonical events, then best-effort regenerate the
+# projections. Projection failure NEVER un-does or blocks the canonical write.
 
-def _slug(s: str) -> str:
-    return re.sub(r"[^a-z0-9]+", "-", (s or "misc").lower()).strip("-") or "misc"
+def _after_write(result: dict) -> dict:
+    try:
+        regenerate_projections()
+    except Exception as e:  # capture must not fail because a projection did
+        result["projection_warning"] = f"projections not regenerated: {e}"
+    return result
 
 
-def capture(belief: dict) -> dict:
-    """Validated write. Rejects envelope violations; appends a `formed` event."""
+def capture(belief: dict, evidence_content: str | None = None,
+            evidence_uri: str | None = None,
+            evidence_media_type: str = "text/plain",
+            premise_ids: list[str] | None = None) -> dict:
+    """Validated write of a NEW belief as canonical events.
+
+    Structural firewall: observed/asserted beliefs get their grounding from
+    `evidence_content`/`evidence_uri` (registered as evidence first);
+    derived/inferred from `premise_ids`. If the required references are
+    absent, the belief is still captured — explicitly marked `unsupported`,
+    never silently."""
     belief = dict(belief)
     belief.setdefault("observed_at", today().isoformat())
     problems = validate_belief(belief)
     if problems:
         raise ValueError("envelope violation: " + "; ".join(problems))
-    existing, _ = find(belief["id"])
-    if existing is not None:
-        raise ValueError(
-            f"belief '{belief['id']}' already exists — use reconcile() to change it "
-            "(no silent overwrite)"
-        )
-    belief.setdefault("events", []).append(
-        {"at": today().isoformat(), "op": "formed", "method": belief["method"],
-         "note": belief.pop("note", "captured via MCP")}
+    log = get_log()
+
+    evidence_ids: list[str] = []
+    if evidence_content is not None or evidence_uri is not None:
+        evidence_ids.append(log.register_evidence(
+            media_type=evidence_media_type,
+            uri=evidence_uri,
+            content=evidence_content,
+            metadata={"role": "capture-grounding", "note": belief.get("note", "")},
+        ))
+    premise_ids = list(premise_ids or [])
+    method = belief["method"]
+    unsupported = (
+        (method in ("observed", "asserted") and not evidence_ids)
+        or (method in ("derived", "inferred") and not premise_ids)
     )
-    path = os.path.join(BELIEFS_DIR, f"{_slug(belief.get('cluster'))}.yaml")
-    doc = {"beliefs": []}
-    if os.path.exists(path):
-        doc = yaml.safe_load(open(path)) or {"beliefs": []}
-        if isinstance(doc, list):
-            doc = {"beliefs": doc}
-    doc.setdefault("beliefs", []).append(belief)
-    os.makedirs(BELIEFS_DIR, exist_ok=True)
-    with open(path, "w") as fh:
-        yaml.safe_dump(doc, fh, sort_keys=False, allow_unicode=True, width=100)
-    return stamped(belief)
+    log.form_belief(
+        belief_id=belief["id"],
+        claim=belief["claim"],
+        method=method,
+        volatility=belief["volatility"],
+        cluster=belief.get("cluster"),
+        anchor=belief.get("anchor"),
+        anchor_cost=belief.get("anchor_cost"),
+        evidence_ids=evidence_ids,
+        premise_ids=premise_ids,
+        unsupported=unsupported,
+        observed_at=str(belief["observed_at"]),
+        metadata={"kind": belief.get("kind"), "note": belief.get("note")},
+    )
+    for target in belief.get("links") or []:
+        try:
+            log.record_relationship(belief["id"], "DEPENDS_ON", target,
+                                    note="links field at capture")
+        except ValueError:
+            pass  # unknown link target must not block capture
+    v, _ = find(belief["id"])
+    result = stamped(v)
+    if unsupported:
+        result["warning"] = (
+            f"captured as unsupported: method '{method}' had no "
+            + ("evidence" if method in ("observed", "asserted") else "premises")
+            + " — provide evidence_content/evidence_uri or premises to ground it"
+        )
+    return _after_write(result)
 
 
 def record_verification(belief_id: str, result: str, note: str = "") -> dict:
-    """Append a verified/contradicted event. A failed verify IS a contradiction."""
-    b, path = find(belief_id)
-    if b is None:
+    """Record a verification verdict. If the belief has an anchor, it is run
+    and its actual output becomes evidence linked to the verification."""
+    v, _ = find(belief_id)
+    if v is None:
         raise ValueError(f"no belief '{belief_id}'")
-    ev = {"at": today().isoformat(),
-          "op": "verified" if result == "verified" else "contradicted",
-          "method": "observed", "note": (note or "")[:300]}
-    b.setdefault("events", []).append(ev)
-    if result == "verified":
-        b["verified_at"] = today().isoformat()
-        b["contested"] = False
-    else:
-        b["contested"] = True
-    _rewrite(path, b)
-    return stamped(b)
+    output, command = None, v.get("anchor")
+    if command:
+        proc = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=120)
+        output = (proc.stdout + proc.stderr).strip()
+    elif note:
+        output = note
+    get_log().record_verification(
+        belief_id, "verified" if result == "verified" else "contradicted",
+        output=output, command=command)
+    v, _ = find(belief_id)
+    return _after_write(stamped(v))
 
 
 def run_anchor(belief_id: str) -> dict:
-    b, _ = find(belief_id)
-    if b is None:
+    v, _ = find(belief_id)
+    if v is None:
         raise ValueError(f"no belief '{belief_id}'")
-    if not b.get("anchor"):
+    if not v.get("anchor"):
         raise ValueError(f"belief '{belief_id}' has no anchor")
-    proc = subprocess.run(b["anchor"], shell=True, capture_output=True, text=True, timeout=120)
-    return {"belief": stamped(b), "observed": (proc.stdout + proc.stderr).strip()}
+    proc = subprocess.run(v["anchor"], shell=True, capture_output=True, text=True, timeout=120)
+    return {"belief": stamped(v), "observed": (proc.stdout + proc.stderr).strip()}
 
 
 def reconcile(belief_id: str, new_claim: str, note: str) -> dict:
-    """Supersede a claim — with lineage, never silently."""
-    b, path = find(belief_id)
-    if b is None:
+    """Restate a claim — with complete lineage, never silently. The previous
+    text is preserved in full in canonical history; if the belief was
+    contested, the reconciliation resolves the contradiction on record."""
+    v, _ = find(belief_id)
+    if v is None:
         raise ValueError(f"no belief '{belief_id}'")
-    old = b.get("claim")
-    b.setdefault("events", []).append(
-        {"at": today().isoformat(), "op": "superseded", "method": b.get("method"),
-         "note": f"{note} (was: {old})"[:300]}
-    )
-    b["claim"] = new_claim
-    b["verified_at"] = today().isoformat()
-    b["contested"] = False
-    _rewrite(path, b)
-    return stamped(b)
+    log = get_log()
+    log.restate_belief(belief_id, new_claim, note=note)
+    if v["contested"]:
+        log.resolve_contradiction(belief_id, note=f"reconciled: {note}")
+    v, _ = find(belief_id)
+    return _after_write(stamped(v))
+
+
+def retire(belief_id: str, reason: str) -> dict:
+    """Retire a belief — a recorded state, not destruction. The belief and its
+    full history remain in canonical history and are recoverable."""
+    get_log().retire_belief(belief_id, reason)
+    v, _ = find(belief_id)
+    return _after_write(stamped(v))
+
+
+def why(belief_id: str) -> dict:
+    """Provenance: belief -> evidence (content availability) -> premises."""
+    return get_log().why(belief_id)
 
 
 # ------------------------------------------------------------------- health
@@ -286,18 +387,96 @@ def health() -> dict:
         counts[st] = counts.get(st, 0) + 1
         if st in ("SUSPECT", "CONTESTED"):
             stalest.append({"id": b["id"], "stance": st, "anchor_cost": b.get("anchor_cost")})
-    return {"total": sum(counts.values()), "by_stance": counts, "needs_attention": stalest}
+    out = {"total": sum(counts.values()), "by_stance": counts, "needs_attention": stalest}
+    out["chain_valid"] = get_log().verify_chain()
+    return out
 
 
 # -------------------------------------------------------------- projections
 
+def _slug(s: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", (s or "misc").lower()).strip("-") or "misc"
+
+
+def yaml_projection() -> dict[str, str]:
+    """Deterministic {filename: content} projection of beliefs by cluster.
+    Retired beliefs are included, marked — projection hides nothing."""
+    clusters: dict[str, list[dict]] = {}
+    for v, _ in load_all(include_retired=True):
+        clusters.setdefault(_slug(v.get("cluster")), []).append(v)
+    files = {}
+    for slug in sorted(clusters):
+        beliefs = []
+        for v in sorted(clusters[slug], key=lambda x: x["id"]):
+            b = {k: v[k] for k in (
+                "id", "claim", "method", "volatility", "cluster", "anchor",
+                "anchor_cost", "observed_at", "verified_at", "contested",
+                "unsupported", "links") if v.get(k) not in (None, [], "")}
+            if v["reconstructed"]:
+                b["reconstructed"] = True
+            if v["retired"]:
+                b["retired"] = True
+                b["retired_reason"] = v["retired_reason"]
+            if len(v["claim_history"]) > 1:
+                b["claim_history"] = [
+                    {"at": h["at"][:10], "claim": h["claim"]} for h in v["claim_history"]]
+            b["events"] = v["events"]
+            beliefs.append(b)
+        body = yaml.safe_dump({"generated": True, "beliefs": beliefs},
+                              sort_keys=False, allow_unicode=True, width=100)
+        files[f"{slug}.yaml"] = GENERATED_YAML_HEADER + body
+    return files
+
+
+def events_jsonl() -> str:
+    """Deterministic export of canonical events. Strictly a projection —
+    canonical.db remains the only canonical log."""
+    return "".join(canonical_json(ev) + "\n" for ev in get_log().events())
+
+
+def regenerate_projections() -> dict:
+    """Regenerate beliefs/*.yaml and events.jsonl from canonical history.
+    Removes stale generated YAML files that no longer correspond to a cluster."""
+    bdir = beliefs_dir()
+    os.makedirs(bdir, exist_ok=True)
+    files = yaml_projection()
+    for name, content in files.items():
+        with open(os.path.join(bdir, name), "w") as fh:
+            fh.write(content)
+    for existing in os.listdir(bdir):
+        if existing.endswith(".yaml") and existing not in files:
+            os.remove(os.path.join(bdir, existing))  # stale projection only; canonical history is untouched
+    with open(events_jsonl_path(), "w") as fh:
+        fh.write(events_jsonl())
+    return {"yaml_files": sorted(files), "events_jsonl": events_jsonl_path()}
+
+
+def projection_drift() -> list[str]:
+    """Report projection files that differ from canonical history (e.g. hand
+    edits). Drift never feeds back into canonical state."""
+    drift = []
+    files = yaml_projection()
+    bdir = beliefs_dir()
+    for name, content in files.items():
+        path = Path(bdir) / name
+        if (path.read_text() if path.exists() else None) != content:
+            drift.append(name)
+    for existing in sorted(os.listdir(bdir)) if os.path.isdir(bdir) else []:
+        if existing.endswith(".yaml") and existing not in files:
+            drift.append(existing)
+    jsonl = Path(events_jsonl_path())
+    if jsonl.exists() and jsonl.read_text() != events_jsonl():
+        drift.append(jsonl.name)
+    return drift
+
+
 def index_markdown(ref: dt.date | None = None) -> str:
     ref = ref or today()
     rows = [(b, stance(b, ref), *freshness(b, ref)) for b, _ in load_all()]
-    rows.sort(key=lambda x: (x[0].get("cluster", ""), STANCE_ORDER.get(x[1], 9)))
+    rows.sort(key=lambda x: (x[0].get("cluster") or "", STANCE_ORDER.get(x[1], 9)))
     lines, cur = [], None
     for b, st, bucket, a in rows:
-        cl = b.get("cluster", "(uncategorized)")
+        cl = b.get("cluster") or "(uncategorized)"
         if cl != cur:
             lines.append(f"\n### {cl}")
             cur = cl
@@ -308,20 +487,21 @@ def index_markdown(ref: dt.date | None = None) -> str:
             f"⟨{b['id']}, {b.get('method','?')} {b.get('observed_at','?')}, {b.get('volatility','?')}, {agestr}⟩{verify}"
         )
     return (
-        "<!-- AUTO-GENERATED by epistemic memory engine — edit beliefs/*.yaml in "
-        "~/workspace/epistemic/memory -->\n"
+        "<!-- AUTO-GENERATED by epistemic memory engine — a projection of canonical.db in "
+        "~/workspace/epistemic/memory; edits here never become canonical -->\n"
         f"# Memory — epistemic index ({len(rows)} beliefs, stamped {ref.isoformat()})\n\n"
         "Each belief arrives wearing its stance. 🟢 RELY · 🟡 NOTE · 🟠 SUSPECT (verify) · "
-        "🔴 CONTESTED · 🔵 HYPOTHESIS. Canonical store: `~/workspace/epistemic/memory/`.\n"
+        "🔴 CONTESTED · 🔵 HYPOTHESIS. Canonical store: `~/workspace/epistemic/memory/canonical.db`.\n"
         + "\n".join(lines) + "\n"
     )
 
 
 def write_index() -> str:
     body = index_markdown()
-    with open(INDEX_PATH, "w") as fh:
+    os.makedirs(os.path.dirname(index_path()), exist_ok=True)
+    with open(index_path(), "w") as fh:
         fh.write(body)
-    return INDEX_PATH
+    return index_path()
 
 
 # ------------------------------------------------------------------ CLI
@@ -329,30 +509,39 @@ def write_index() -> str:
 def main() -> int:
     import argparse
     import json as _json
-    import sys
 
     p = argparse.ArgumentParser(prog="epistemic-engine")
     sub = p.add_subparsers(dest="cmd", required=True)
     s = sub.add_parser("stamp"); s.add_argument("--write-index", action="store_true")
-    v = sub.add_parser("validate"); v.add_argument("file")
     ve = sub.add_parser("verify"); ve.add_argument("id")
     ve.add_argument("--result", choices=["verified", "contradicted"]); ve.add_argument("--note", default="")
+    w = sub.add_parser("why"); w.add_argument("id")
+    pr = sub.add_parser("project"); pr.add_argument("--check", action="store_true")
     sub.add_parser("list"); sub.add_parser("health")
     args = p.parse_args()
 
     if args.cmd == "stamp":
         print(write_index() if args.write_index else index_markdown())
-    elif args.cmd == "validate":
-        problems = validate_file(args.file)
-        if problems:
-            print(f"REJECTED {args.file}:"); [print(f"  - {x}") for x in problems]; return 1
-        print(f"OK {args.file}")
     elif args.cmd == "verify":
         out = run_anchor(args.id)
         print(f"claim:    {out['belief']['claim']}\nobserved: {out['observed']}")
         if args.result:
             record_verification(args.id, args.result, args.note or out["observed"])
-            print(f"recorded '{args.result}'")
+            print(f"recorded '{args.result}' (anchor output captured as evidence)")
+    elif args.cmd == "why":
+        print(_json.dumps(why(args.id), indent=2))
+    elif args.cmd == "project":
+        if args.check:
+            drift = projection_drift()
+            if drift:
+                print("DRIFT (hand edits or stale projections — never canonical):")
+                for d in drift:
+                    print(f"  - {d}")
+                return 1
+            print("projections match canonical history")
+        else:
+            out = regenerate_projections()
+            print(f"regenerated {len(out['yaml_files'])} yaml files + {out['events_jsonl']}")
     elif args.cmd == "list":
         for b, _ in load_all():
             st = stamped(b)

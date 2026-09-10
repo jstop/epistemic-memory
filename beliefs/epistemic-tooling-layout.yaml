@@ -1,0 +1,175 @@
+# AUTO-GENERATED projection of canonical.db — DO NOT HAND-EDIT.
+# Edits here never become canonical state; write through the MCP tools or
+# the engine CLI, then regenerate with: python engine.py project
+generated: true
+beliefs:
+- id: epist-backup-repo
+  claim: Workspaces are backed up in private repo jstop/epistemic-workspaces (~/workspace/epistemic/workspaces-backup)
+  method: observed
+  volatility: structural
+  cluster: Epistemic tooling layout
+  anchor: git -C ~/workspace/epistemic/workspaces-backup remote -v
+  anchor_cost: cheap
+  observed_at: '2026-06-07'
+  contested: false
+  unsupported: false
+  links:
+  - epist-location
+  reconstructed: true
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: epist-consolidation-date
+  claim: The epistemic-tooling consolidation happened on 2026-06-07
+  method: observed
+  volatility: historical
+  cluster: Epistemic tooling layout
+  observed_at: '2026-06-07'
+  contested: false
+  unsupported: false
+  links:
+  - epist-location
+  reconstructed: true
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: epist-location
+  claim: Epistemic tooling is consolidated under ~/workspace/epistemic/
+  method: observed
+  volatility: structural
+  cluster: Epistemic tooling layout
+  anchor: test -d ~/workspace/epistemic && echo present || echo absent
+  anchor_cost: cheap
+  observed_at: '2026-06-07'
+  contested: false
+  unsupported: false
+  links:
+  - epist-consolidation-date
+  reconstructed: true
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: epist-mapper-dormant
+  claim: epistemic-mapper has no development since Jan 2026; its last commit is the 2026-06-07 archival
+    WIP snapshot
+  method: derived
+  volatility: metric
+  cluster: Epistemic tooling layout
+  anchor: git -C ~/workspace/epistemic/mapper log -1 --format=%cd
+  anchor_cost: cheap
+  observed_at: '2026-06-07'
+  contested: false
+  unsupported: true
+  reconstructed: true
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: epist-mapper-tests
+  claim: epistemic-mapper is at 31/32 tests passing, with a known dedup-normalization failure
+  method: observed
+  volatility: metric
+  cluster: Epistemic tooling layout
+  anchor: cd ~/workspace/epistemic/mapper && npm test
+  anchor_cost: expensive
+  observed_at: '2026-06-07'
+  contested: false
+  unsupported: false
+  links:
+  - epist-mapper-dormant
+  reconstructed: true
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: epist-oldpaths-gone
+  claim: The old paths ~/EPISTEMIC_TOOLS, ~/EPISTEMIC_WORKBENCH, ~/workspace/epistemic-mapper no longer
+    exist
+  method: observed
+  volatility: structural
+  cluster: Epistemic tooling layout
+  anchor: for p in ~/EPISTEMIC_TOOLS ~/EPISTEMIC_WORKBENCH ~/workspace/epistemic-mapper; do test -e $p
+    && echo "EXISTS $p"; done; echo checked
+  anchor_cost: cheap
+  observed_at: '2026-06-07'
+  contested: false
+  unsupported: false
+  reconstructed: true
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: epist-stale-dup-pending
+  claim: A stale duplicate ~/workspace/Claude_Desktop/epistemics/ is held pending user-approved deletion
+  method: observed
+  volatility: status
+  cluster: Epistemic tooling layout
+  anchor: test -d ~/workspace/Claude_Desktop/epistemics && echo present || echo gone
+  anchor_cost: cheap
+  observed_at: '2026-06-07'
+  contested: false
+  unsupported: false
+  reconstructed: true
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: epist-workbench-branch
+  claim: The workbench active branch is feature/workbench-editor-provenance
+  method: observed
+  volatility: status
+  cluster: Epistemic tooling layout
+  anchor: git -C ~/workspace/epistemic/workbench branch --show-current
+  anchor_cost: cheap
+  observed_at: '2026-06-07'
+  contested: false
+  unsupported: false
+  links:
+  - epist-workbench-identity
+  reconstructed: true
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: epist-workbench-identity
+  claim: workbench/ is the epistemic-workbench MCP server (public repo jstop/epistemic-workbench)
+  method: observed
+  volatility: structural
+  cluster: Epistemic tooling layout
+  anchor: git -C ~/workspace/epistemic/workbench remote -v
+  anchor_cost: cheap
+  observed_at: '2026-06-07'
+  contested: false
+  unsupported: false
+  reconstructed: true
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: epist-workspaces-count
+  claim: There are 40 live research workspaces under ~/workspace/epistemic/workspaces/
+  method: observed
+  volatility: metric
+  cluster: Epistemic tooling layout
+  anchor: ls -d ~/workspace/epistemic/workspaces/*/ 2>/dev/null | wc -l | tr -d ' '
+  anchor_cost: cheap
+  observed_at: '2026-06-07'
+  contested: false
+  unsupported: false
+  links:
+  - epist-location
+  reconstructed: true
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: epist-workspaces-noremote
+  claim: Each epistemic research workspace is a local git repo with no remote
+  method: observed
+  volatility: structural
+  cluster: Epistemic tooling layout
+  anchor: for d in ~/workspace/epistemic/workspaces/*/; do git -C "$d" remote 2>/dev/null | head -1; done
+    | sort -u
+  anchor_cost: expensive
+  observed_at: '2026-06-07'
+  contested: false
+  unsupported: false
+  links:
+  - epist-workspaces-count
+  reconstructed: true
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed

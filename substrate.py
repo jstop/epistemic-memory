@@ -32,7 +32,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from engine import METHODS, VOLATILITIES
+METHODS = ("observed", "asserted", "derived", "inferred")
+VOLATILITIES = ("historical", "structural", "preference", "metric", "status")
 
 EVENT_TYPES = (
     "EvidenceRegistered",

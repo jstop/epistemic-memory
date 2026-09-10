@@ -1,49 +1,50 @@
+# AUTO-GENERATED projection of canonical.db — DO NOT HAND-EDIT.
+# Edits here never become canonical state; write through the MCP tools or
+# the engine CLI, then regenerate with: python engine.py project
+generated: true
 beliefs:
+- id: library-design-doc
+  claim: The living library design lineage is in ~/.claude/plans/i-don-t-think-we-re-recursive-blossom.md
+  method: observed
+  volatility: structural
+  cluster: Living library system
+  anchor: test -f ~/.claude/plans/i-don-t-think-we-re-recursive-blossom.md && echo present || echo absent
+  anchor_cost: cheap
+  observed_at: '2026-08-19'
+  contested: false
+  unsupported: false
+  links:
+  - library-home
+  reconstructed: true
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
 - id: library-home
   claim: The canonical belief store and MCP server live at ~/workspace/epistemic/memory (local git repo)
   method: observed
   volatility: structural
   cluster: Living library system
-  kind: project
   anchor: test -f ~/workspace/epistemic/memory/server.py && echo present || echo absent
   anchor_cost: cheap
-  links: []
   observed_at: '2026-08-19'
+  contested: false
+  unsupported: false
+  reconstructed: true
   events:
-  - at: '2026-08-19'
-    op: formed
-    method: observed
-    note: created 2026-08-19, this session
+  - at: '2026-09-10'
+    op: BeliefFormed
 - id: library-surfaces
   claim: Only Claude Code (and optionally Claude Desktop) are wired to the living library; claude.ai and
     ChatGPT connectors are not yet built
   method: observed
   volatility: status
   cluster: Living library system
-  kind: project
-  anchor: null
-  anchor_cost: null
+  observed_at: '2026-08-19'
+  contested: false
+  unsupported: false
   links:
   - library-home
-  observed_at: '2026-08-19'
+  reconstructed: true
   events:
-  - at: '2026-08-19'
-    op: formed
-    method: observed
-    note: local-first scope decision 2026-08-19
-- id: library-design-doc
-  claim: The living library design lineage is in ~/.claude/plans/i-don-t-think-we-re-recursive-blossom.md
-  method: observed
-  volatility: structural
-  cluster: Living library system
-  kind: project
-  anchor: test -f ~/.claude/plans/i-don-t-think-we-re-recursive-blossom.md && echo present || echo absent
-  anchor_cost: cheap
-  links:
-  - library-home
-  observed_at: '2026-08-19'
-  events:
-  - at: '2026-08-19'
-    op: formed
-    method: observed
-    note: captured via MCP
+  - at: '2026-09-10'
+    op: BeliefFormed

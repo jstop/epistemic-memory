@@ -58,20 +58,32 @@ def memory_capture(
     anchor_cost: str = "",
     links: list[str] | None = None,
     note: str = "",
+    evidence: str = "",
+    evidence_uri: str = "",
+    premises: list[str] | None = None,
 ) -> dict:
-    """Capture a NEW atomic belief. Envelope is enforced: `method` must be one of
-    observed/asserted/derived/inferred (how it was learned — never upgrade an inference
-    to an observation), `volatility` one of historical/structural/preference/metric/status
-    (sets its decay clock). One claim per belief — split compound facts. Provide `anchor`
-    (a cheap shell check) when one exists. Fails if the id already exists — use
-    memory_reconcile to change an existing belief."""
+    """Capture a NEW atomic belief as canonical events. Envelope is enforced: `method`
+    must be one of observed/asserted/derived/inferred (how it was learned — never upgrade
+    an inference to an observation), `volatility` one of historical/structural/preference/
+    metric/status (sets its decay clock). One claim per belief — split compound facts.
+
+    Ground the belief: for observed/asserted pass `evidence` (the source excerpt/output,
+    snapshotted content-addressed) and/or `evidence_uri`; for derived/inferred pass
+    `premises` (existing belief ids). Ungrounded beliefs are still captured but arrive
+    explicitly marked unsupported — capture never blocks, grounding is never fabricated.
+    Fails if the id already exists — use memory_reconcile to change an existing belief."""
     belief = {
         "id": id, "claim": claim, "method": method, "volatility": volatility,
         "cluster": cluster, "kind": kind,
         "anchor": anchor or None, "anchor_cost": anchor_cost or None,
         "links": links or [], "note": note or "captured via MCP",
     }
-    return engine.capture(belief)
+    return engine.capture(
+        belief,
+        evidence_content=evidence or None,
+        evidence_uri=evidence_uri or None,
+        premise_ids=premises or None,
+    )
 
 
 @mcp.tool()
@@ -79,7 +91,9 @@ def memory_verify(id: str, result: str = "", note: str = "") -> dict:
     """Run a belief's anchor command and report what reality says vs. the claim.
     Call first with no `result` to observe; then call again with result='verified' or
     result='contradicted' to record the judgment (a failed check IS a contradiction —
-    it flips the belief to CONTESTED and blocks reliance until reconciled)."""
+    it flips the belief to CONTESTED and blocks reliance until reconciled). When the
+    judgment is recorded, the anchor is re-run and its actual output is snapshotted as
+    evidence linked to the verification — reality's answer is preserved, not discarded."""
     if result:
         return {"recorded": engine.record_verification(id, result, note)}
     return engine.run_anchor(id)
@@ -87,9 +101,10 @@ def memory_verify(id: str, result: str = "", note: str = "") -> dict:
 
 @mcp.tool()
 def memory_reconcile(id: str, new_claim: str, note: str) -> dict:
-    """Supersede a belief's claim with lineage — the only way to change one. Appends a
-    `superseded` event recording the old claim and why, resets freshness, clears
-    contested. Silent overwrite is structurally impossible."""
+    """Restate a belief's claim with lineage — the only way to change one. Appends a
+    canonical BeliefRestated event; the complete previous text remains recoverable
+    forever, and a contested belief is resolved on record. Silent overwrite is
+    structurally impossible: canonical.db is append-only and hash-chained."""
     return engine.reconcile(id, new_claim, note)
 
 
@@ -105,6 +120,14 @@ def memory_reindex() -> str:
     """Regenerate the thin stamped index (MEMORY.md projection for Claude Code).
     Returns the path written."""
     return engine.write_index()
+
+
+@mcp.tool()
+def memory_why(id: str) -> dict:
+    """Provenance for a belief: 'why do you believe this?' Walks from the belief to its
+    registered evidence (with content availability) and recursively through premise
+    beliefs. Reconstructed pre-log beliefs say so honestly."""
+    return engine.why(id)
 
 
 if __name__ == "__main__":
