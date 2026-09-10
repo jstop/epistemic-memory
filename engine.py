@@ -125,6 +125,7 @@ def _view(bid: str, b: dict, relationships: list[dict]) -> dict:
         "contested": bool(b.get("contested")),
         "retired": bool(b.get("retired")),
         "retired_reason": b.get("retired_reason"),
+        "ambient": bool(b.get("ambient", True)),
         "unsupported": bool(b.get("unsupported")),
         "reconstructed": bool((b.get("metadata") or {}).get("reconstructed")),
         "links": links,
@@ -243,6 +244,7 @@ def stamped(b: dict, ref: dt.date | None = None,
         "contested": bool(b.get("contested")),
         "unsupported": bool(b.get("unsupported")),
         "reconstructed": bool(b.get("reconstructed")),
+        "ambient": bool(b.get("ambient", True)),
         "anchor": b.get("anchor"),
         "anchor_cost": b.get("anchor_cost"),
         "links": b.get("links", []),
@@ -407,6 +409,13 @@ def retire(belief_id: str, reason: str) -> dict:
     return _after_write(stamped(v))
 
 
+def set_visibility(belief_id: str, ambient: bool, note: str = "") -> dict:
+    """Keep a belief in canonical history but in/out of the ambient index."""
+    get_log().set_visibility(belief_id, ambient, note=note)
+    v, _ = find(belief_id)
+    return _after_write(stamped(v))
+
+
 def why(belief_id: str) -> dict:
     """Provenance: belief -> evidence (content availability) -> premises."""
     return get_log().why(belief_id)
@@ -458,6 +467,8 @@ def yaml_projection() -> dict[str, str]:
             if v["retired"]:
                 b["retired"] = True
                 b["retired_reason"] = v["retired_reason"]
+            if not v["ambient"]:
+                b["ambient"] = False
             if len(v["claim_history"]) > 1:
                 b["claim_history"] = [
                     {"at": h["at"][:10], "claim": h["claim"]} for h in v["claim_history"]]
@@ -516,6 +527,8 @@ def index_markdown(ref: dt.date | None = None) -> str:
     by_id = all_views_by_id()
     rows = []
     for b, _ in load_all():
+        if not b.get("ambient", True):
+            continue  # private: in canonical history and explicit recall, not the ambient index
         s = stamped(b, ref, by_id=by_id)
         rows.append((b, s["stance"], *freshness(b, ref), s["degraded_reason"]))
     rows.sort(key=lambda x: (x[0].get("cluster") or "", STANCE_ORDER.get(x[1], 9)))

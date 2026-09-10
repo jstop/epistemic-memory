@@ -45,6 +45,7 @@ EVENT_TYPES = (
     "BeliefRetired",
     "RelationshipRecorded",
     "ReconciliationRun",
+    "VisibilityChanged",
 )
 
 RELATIONSHIPS = (
@@ -274,6 +275,16 @@ class CanonicalLog:
             "belief_id": belief_id, "note": note,
         })
 
+    def set_visibility(self, belief_id: str, ambient: bool, note: str = "",
+                       actor: str = "owner") -> None:
+        """Change whether a belief is surfaced in ambient projections (the
+        MEMORY.md index). A recorded state, not deletion: non-ambient beliefs
+        remain in canonical history and answer explicit recall."""
+        self._require_belief(belief_id)
+        self._append("VisibilityChanged", actor, {
+            "belief_id": belief_id, "ambient": bool(ambient), "note": note,
+        })
+
     def retire_belief(self, belief_id: str, reason: str, actor: str = "owner") -> None:
         self._require_belief(belief_id)
         self._append("BeliefRetired", actor, {
@@ -349,7 +360,7 @@ class CanonicalLog:
             elif t == "BeliefFormed":
                 b = dict(p["belief"])
                 b.update(contested=False, retired=False, retired_reason=None,
-                         verified_at=None, recorded_at=at,
+                         ambient=True, verified_at=None, recorded_at=at,
                          claim_history=[{"claim": b["claim"], "at": at, "origin": "formed"}],
                          history=[])
                 beliefs[b["belief_id"]] = b
@@ -373,6 +384,8 @@ class CanonicalLog:
                 b = beliefs[p["belief_id"]]
                 b["retired"] = True
                 b["retired_reason"] = p["reason"]
+            elif t == "VisibilityChanged":
+                beliefs[p["belief_id"]]["ambient"] = p["ambient"]
             elif t == "RelationshipRecorded":
                 relationships.append(dict(p["relationship"], recorded_at=at))
             elif t == "ReconciliationRun":

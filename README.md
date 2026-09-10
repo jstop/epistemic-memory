@@ -21,6 +21,10 @@ owns memory; they all borrow it through the MCP server.
   LLM/human extracts beliefs from staged items, apply captures them grounded in their
   source. First adapter: Claude chat-history export. An item may yield zero beliefs;
   its snapshot is preserved either way.
+- `review.py` + `review.html` — local belief-review UI (`python review.py`): browse every belief
+  with stance, evidence excerpts, and history; Confirm / Rephrase / Retire / Private are all
+  canonical events through the engine. Private (VisibilityChanged) keeps a belief in history
+  and explicit recall but out of the ambient MEMORY.md index.
 - `migrate.py` — one-time pre-log YAML import (done; beliefs marked `reconstructed`)
 - Projections (all regenerable; hand-edits never become canonical — check drift with
   `python engine.py project --check`): `beliefs/*.yaml`, `events.jsonl`,
