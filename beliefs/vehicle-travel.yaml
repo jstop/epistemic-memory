@@ -70,6 +70,7 @@ beliefs:
   contested: false
   unsupported: false
   links:
+  - chat-nomadic-lifestyle
   - chat-tesla-model3
   events:
   - at: '2026-09-10'
@@ -83,6 +84,9 @@ beliefs:
   observed_at: '2026-08-21'
   contested: false
   unsupported: false
+  links:
+  - chat-florida-residency-end
+  - chat-tesla-model3
   events:
   - at: '2026-09-10'
     op: BeliefFormed

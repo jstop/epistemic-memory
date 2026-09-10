@@ -44,18 +44,37 @@ beliefs:
   - at: '2026-09-10'
     op: BeliefRestated
 - id: chat-career-background
-  claim: 'Josh is a former Navy nuclear engineer, then a DevOps/platform engineer (~10 years, AWS/Terraform/IaC),
-    and a standup comedian — his own one-line bio: ''former Navy nuclear engineer, DevOps guy, and standup
-    comedian'''
+  claim: 'Josh is a former Navy nuclear engineer, then ~10 years DevOps/platform engineering (AWS/Terraform/IaC;
+    past employers include clypd); lost a job ~Oct 2024 during his post-viral illness (filed unemployment),
+    was job-searching through mid-2025, then at Insperity until May 2026; also a standup comedian — his
+    own bio: ''former Navy nuclear engineer, DevOps guy, and standup comedian'''
   method: asserted
   volatility: structural
   cluster: People
   observed_at: '2026-03-24'
   contested: false
   unsupported: false
+  claim_history:
+  - at: '2026-09-10'
+    claim: 'Josh is a former Navy nuclear engineer, then a DevOps/platform engineer (~10 years, AWS/Terraform/IaC),
+      and a standup comedian — his own one-line bio: ''former Navy nuclear engineer, DevOps guy, and standup
+      comedian'''
+  - at: '2026-09-10'
+    claim: 'Josh is a former Navy nuclear engineer, then ~10 years DevOps/platform engineering (AWS/Terraform/IaC;
+      past employers include clypd; an unemployed stretch in early-mid 2025 before Insperity), and a standup
+      comedian — his own bio: ''former Navy nuclear engineer, DevOps guy, and standup comedian'''
+  - at: '2026-09-10'
+    claim: 'Josh is a former Navy nuclear engineer, then ~10 years DevOps/platform engineering (AWS/Terraform/IaC;
+      past employers include clypd); lost a job ~Oct 2024 during his post-viral illness (filed unemployment),
+      was job-searching through mid-2025, then at Insperity until May 2026; also a standup comedian —
+      his own bio: ''former Navy nuclear engineer, DevOps guy, and standup comedian'''
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+  - at: '2026-09-10'
+    op: BeliefRestated
+  - at: '2026-09-10'
+    op: BeliefRestated
 - id: chat-dad-model-y
   claim: Josh's dad drives a Tesla Model Y (no factory tow hitch)
   method: asserted
@@ -191,6 +210,18 @@ beliefs:
   volatility: historical
   cluster: People
   observed_at: '2026-01-28'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: chat-wedding-officiant
+  claim: Josh officiated a friend's wedding in 2025, preparing a ceremony themed on cosmic wonder — life
+    emerging amid chaos and entropy
+  method: asserted
+  volatility: historical
+  cluster: People
+  observed_at: '2025-02-08'
   contested: false
   unsupported: false
   events:

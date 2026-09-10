@@ -4,17 +4,28 @@
 generated: true
 beliefs:
 - id: chat-adhd
-  claim: Josh identifies ADHD-type executive function as his '#2 problem' — task initiation and demand
-    avoidance are hard, but planning works when he programs toward a concrete end state
+  claim: 'Josh has ADHD-type executive function challenges (his ''#2 problem'': task initiation, demand
+    avoidance, rumination) and is prescribed Vyvanse/lisdexamfetamine; planning works for him when programming
+    toward a concrete end state'
   method: asserted
   volatility: structural
   cluster: Health
   observed_at: '2026-05-11'
   contested: false
   unsupported: false
+  claim_history:
+  - at: '2026-09-10'
+    claim: Josh identifies ADHD-type executive function as his '#2 problem' — task initiation and demand
+      avoidance are hard, but planning works when he programs toward a concrete end state
+  - at: '2026-09-10'
+    claim: 'Josh has ADHD-type executive function challenges (his ''#2 problem'': task initiation, demand
+      avoidance, rumination) and is prescribed Vyvanse/lisdexamfetamine; planning works for him when programming
+      toward a concrete end state'
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+  - at: '2026-09-10'
+    op: BeliefRestated
 - id: chat-health-research
   claim: Josh researches histamine intolerance and long-COVID-adjacent health topics (neuromuscular medicine,
     DAO enzyme, low-histamine diet) for his own health management
@@ -29,10 +40,10 @@ beliefs:
     op: BeliefFormed
 - id: chat-long-covid
   claim: 'Josh has long COVID (2+ years, since ~2023): recurrent illness (~a dozen times/year), systemic
-    inflammation that triggered afib treated with an ablation (~late 2024; kava triggered a recurrence
-    Dec 2025), measurable memory decline on a VA test, mast-cell activation/histamine issues, glucose
-    instability, and 2026 peripheral vision loss in the left eye; managed via VA specialty clinic plus
-    a long-COVID specialist (Klimas-protocol isoprinosine cycling)'
+    inflammation with cardiac involvement (myocarditis; afib treated by ablation ~late 2024, kava-triggered
+    recurrence Dec 2025), measurable memory decline on a VA test, mast-cell activation/histamine issues,
+    glucose instability, and 2026 peripheral vision loss in the left eye; managed via VA specialty clinic
+    plus a long-COVID specialist (Klimas-protocol isoprinosine cycling)'
   method: asserted
   volatility: structural
   cluster: Health
@@ -56,9 +67,17 @@ beliefs:
       Dec 2025), measurable memory decline on a VA test, mast-cell activation/histamine issues, glucose
       instability, and 2026 peripheral vision loss in the left eye; managed via VA specialty clinic plus
       a long-COVID specialist (Klimas-protocol isoprinosine cycling)'
+  - at: '2026-09-10'
+    claim: 'Josh has long COVID (2+ years, since ~2023): recurrent illness (~a dozen times/year), systemic
+      inflammation with cardiac involvement (myocarditis; afib treated by ablation ~late 2024, kava-triggered
+      recurrence Dec 2025), measurable memory decline on a VA test, mast-cell activation/histamine issues,
+      glucose instability, and 2026 peripheral vision loss in the left eye; managed via VA specialty clinic
+      plus a long-COVID specialist (Klimas-protocol isoprinosine cycling)'
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+  - at: '2026-09-10'
+    op: BeliefRestated
   - at: '2026-09-10'
     op: BeliefRestated
   - at: '2026-09-10'
@@ -93,6 +112,18 @@ beliefs:
   volatility: structural
   cluster: Health
   observed_at: '2026-07-14'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: chat-vegan-at-home
+  claim: Josh prefers to eat vegan at home (within his low-histamine constraints); Liz was mostly vegan
+    + seafood
+  method: asserted
+  volatility: preference
+  cluster: Health
+  observed_at: '2024-08-08'
   contested: false
   unsupported: false
   events:

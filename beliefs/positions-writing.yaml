@@ -92,6 +92,19 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+- id: chat-screenpipe-project
+  claim: Josh ran Screenpipe continuous screen-capture + OCR on his machine (~2024-2025) and built summarization,
+    vector-db (Chroma), and knowledge-graph (Graphiti/Neo4j) pipelines over it — the original 'AI that
+    learns my life by observation' project from which his memory/epistemics work descends
+  method: asserted
+  volatility: historical
+  cluster: Positions & writing
+  observed_at: '2025-05-02'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
 - id: chat-thesis-accessibility-work
   claim: Josh is reworking his accountable-identity thesis into a piece accessible to a general audience
   method: asserted

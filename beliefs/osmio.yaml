@@ -86,6 +86,8 @@ beliefs:
   observed_at: '2026-08-21'
   contested: false
   unsupported: false
+  links:
+  - chat-osmio-mission
   events:
   - at: '2026-09-10'
     op: BeliefFormed
@@ -102,10 +104,10 @@ beliefs:
   - at: '2026-09-10'
     op: BeliefFormed
 - id: chat-osmio-origin-story
-  claim: 'Josh''s path to Osmio, in his words: ~late 2024, trying to make sense of transformer AI''s power
-    to influence decisions, he worked on a zero-trust personal-data idea and shared it in My Data Global;
-    Wes Kussmaul''s assistant reached out and introduced them; the existential-crisis-of-information-technology
-    framing is his canonical origin'
+  claim: 'Josh''s path to Osmio: the ChatGPT/transformer wave (~2023) pushed him into personal-data empowerment
+    thinking -> MyData Global -> introduced to Wes Kussmaul ~mid-2024 (studying Osmio''s municipal charter
+    by Aug 2024, corresponding with Wes by Oct 2024); his framing: the existential crisis of information
+    technology powerful enough to manipulate human agency at scale'
   method: asserted
   volatility: historical
   cluster: Osmio
@@ -123,9 +125,16 @@ beliefs:
       power to influence decisions, he worked on a zero-trust personal-data idea and shared it in My Data
       Global; Wes Kussmaul''s assistant reached out and introduced them; the existential-crisis-of-information-technology
       framing is his canonical origin'
+  - at: '2026-09-10'
+    claim: 'Josh''s path to Osmio: the ChatGPT/transformer wave (~2023) pushed him into personal-data
+      empowerment thinking -> MyData Global -> introduced to Wes Kussmaul ~mid-2024 (studying Osmio''s
+      municipal charter by Aug 2024, corresponding with Wes by Oct 2024); his framing: the existential
+      crisis of information technology powerful enough to manipulate human agency at scale'
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+  - at: '2026-09-10'
+    op: BeliefRestated
   - at: '2026-09-10'
     op: BeliefRestated
 - id: chat-osmio-recruiting
@@ -191,6 +200,8 @@ beliefs:
   observed_at: '2026-06-25'
   contested: false
   unsupported: false
+  links:
+  - chat-osmio-mission
   events:
   - at: '2026-09-10'
     op: BeliefFormed
@@ -203,6 +214,8 @@ beliefs:
   observed_at: '2026-08-21'
   contested: false
   unsupported: false
+  links:
+  - chat-osmio-mission
   events:
   - at: '2026-09-10'
     op: BeliefFormed
@@ -215,6 +228,8 @@ beliefs:
   observed_at: '2026-06-08'
   contested: false
   unsupported: false
+  links:
+  - chat-authenticity-institute
   claim_history:
   - at: '2026-09-10'
     claim: Josh runs a reliableid.com Zoho mail identity (joshua.stein@reliableid.com) for the identity/Osmio
