@@ -44,6 +44,7 @@ beliefs:
   contested: false
   unsupported: false
   links:
+  - epist-workbench-identity
   - library-home
   reconstructed: true
   claim_history:

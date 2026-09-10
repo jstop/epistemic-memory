@@ -20,6 +20,7 @@ import datetime as dt
 from mcp.server.fastmcp import FastMCP
 
 import engine
+import reconciler
 
 mcp = FastMCP("epistemic-memory")
 
@@ -129,6 +130,37 @@ def memory_why(id: str) -> dict:
     registered evidence (with content availability) and recursively through premise
     beliefs. Reconstructed pre-log beliefs say so honestly."""
     return engine.why(id)
+
+
+@mcp.tool()
+def memory_reconcile_pass(min_score: float = 0.15, limit: int = 20) -> dict:
+    """Start an async reconciliation pass: returns belief pairs that look related
+    (lexical similarity) and have never been examined. For each pair, YOU are the judge:
+    read both claims and decide the epistemic relationship from the subject (newer belief)
+    to the object (older belief) — RESTATES (same stance reworded), REFINES (adds
+    precision), QUALIFIES (limits scope), SUPPORTS, CONTRADICTS, SUPERSEDES, DEPENDS_ON,
+    DERIVED_FROM, VERIFIES — or UNRELATED. Judge EVERY returned pair (UNRELATED verdicts
+    stop a pair from being re-proposed), then submit all judgments in one call to
+    memory_reconcile_apply. A CONTRADICTS verdict records the relationship only; it does
+    not contest the belief."""
+    cands = reconciler.candidates(min_score, limit)
+    return {
+        "candidates": cands,
+        "verdicts": list(reconciler.RELATIONSHIPS) + ["UNRELATED"],
+        "next_step": ("judge every pair, then call memory_reconcile_apply with "
+                      "judgments=[{subject_id, object_id, verdict, note}] and your judge name")
+        if cands else "nothing to reconcile",
+    }
+
+
+@mcp.tool()
+def memory_reconcile_apply(judgments: list[dict], judge: str) -> dict:
+    """Record one reconciliation pass atomically as a canonical ReconciliationRun event.
+    `judgments` is the full list for the pass — include the UNRELATED verdicts, they
+    record that the pair was examined. `judge` identifies who judged (e.g. the model id).
+    Relationships (and dependency-aware stance effects for DEPENDS_ON) project from the
+    event immediately; nothing is ever overwritten and a later pass may judge anew."""
+    return reconciler.apply(judgments, judge=judge)
 
 
 if __name__ == "__main__":

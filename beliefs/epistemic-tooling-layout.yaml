@@ -61,6 +61,8 @@ beliefs:
   verified_at: '2026-09-10'
   contested: false
   unsupported: true
+  links:
+  - epist-consolidation-date
   reconstructed: true
   events:
   - at: '2026-09-10'
@@ -183,6 +185,7 @@ beliefs:
   contested: false
   unsupported: false
   links:
+  - epist-location
   - epist-workspaces-count
   reconstructed: true
   events:

@@ -5,13 +5,21 @@ Each belief is an atomic claim wrapped in an epistemic envelope (how it was lear
 how fast it decays, how to re-check it, and its full append-only history). No client
 owns memory; they all borrow it through the MCP server.
 
-- `beliefs/*.yaml` — the store (one file per cluster; schema in `SCHEMA.md`)
-- `engine.py` — stance computation, validation, verification, reconciliation + CLI
-- `server.py` — MCP server (stdio): `memory_recall / capture / verify / reconcile / health / reindex`
-- `substrate.py` — canonical event substrate (v2, in progress): append-only hash-chained
-  SQLite event log + content-addressed evidence store; `tests/test_substrate.py` are its
-  behavioral acceptance tests
-- Projection: `~/.claude/projects/-Users-jstein/memory/MEMORY.md` (auto-generated, stamped)
+- `canonical.db` + `evidence_store/` — the source of truth: append-only hash-chained
+  event log + content-addressed evidence (gitignored; fully replayable)
+- `substrate.py` — the canonical event substrate (log, evidence store, replay, chain
+  verification, atomic reconciliation runs)
+- `engine.py` — read/logic layer: stance computation (dependency-aware), capture/verify/
+  reconcile/retire as canonical events, projections + CLI
+- `reconciler.py` — async reconciliation: mechanical candidate generation (lexical),
+  semantic judging by an LLM client or human, one atomic ReconciliationRun event per
+  pass; UNRELATED verdicts stop re-proposal. Never touches the capture path.
+- `server.py` — MCP server (stdio): `memory_recall / capture / verify / reconcile /
+  health / reindex / why / reconcile_pass / reconcile_apply`
+- `migrate.py` — one-time pre-log YAML import (done; beliefs marked `reconstructed`)
+- Projections (all regenerable; hand-edits never become canonical — check drift with
+  `python engine.py project --check`): `beliefs/*.yaml`, `events.jsonl`,
+  `~/.claude/projects/-Users-jstein/memory/MEMORY.md`
 
 ## Invariants
 1. Reads are never naked — every belief arrives wearing its stance.

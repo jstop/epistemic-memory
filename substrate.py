@@ -44,6 +44,7 @@ EVENT_TYPES = (
     "ContradictionResolved",
     "BeliefRetired",
     "RelationshipRecorded",
+    "ReconciliationRun",
 )
 
 RELATIONSHIPS = (
@@ -279,6 +280,48 @@ class CanonicalLog:
             "belief_id": belief_id, "reason": reason,
         })
 
+    def record_reconciliation(self, *, reconciler: str, version: str, judge: str,
+                              judgments: list[dict], metadata: dict | None = None,
+                              actor: str = "owner") -> str:
+        """Record one reconciliation pass ATOMICALLY: every examined pair with
+        its verdict — a relationship type or UNRELATED — in a single canonical
+        event. UNRELATED verdicts matter: they record that the pair was
+        examined, so it is never re-proposed. Relationships are projected from
+        this event; judging is an interpretation and is recorded as one
+        (reconciler, version, judge all in the payload) — a later pass may
+        judge differently without erasing this one."""
+        if not judgments:
+            raise ValueError("empty reconciliation run — nothing to record")
+        state = self.state()
+        seen_pairs = set()
+        for j in judgments:
+            for key in ("subject_id", "object_id", "verdict"):
+                if not j.get(key):
+                    raise ValueError(f"judgment missing '{key}': {j}")
+            if j["verdict"] not in RELATIONSHIPS and j["verdict"] != "UNRELATED":
+                raise ValueError(f"verdict '{j['verdict']}' not in {RELATIONSHIPS} or UNRELATED")
+            for bid in (j["subject_id"], j["object_id"]):
+                if bid not in state["beliefs"]:
+                    raise ValueError(f"unknown belief in judgment: {bid}")
+            pair = frozenset((j["subject_id"], j["object_id"]))
+            if len(pair) < 2:
+                raise ValueError(f"judgment relates a belief to itself: {j['subject_id']}")
+            if pair in seen_pairs:
+                raise ValueError(f"duplicate pair in run: {sorted(pair)}")
+            seen_pairs.add(pair)
+        self._append("ReconciliationRun", actor, {"run": {
+            "reconciler": reconciler,
+            "version": version,
+            "judge": judge,
+            "judgments": [
+                {"subject_id": j["subject_id"], "object_id": j["object_id"],
+                 "verdict": j["verdict"], "note": j.get("note", "")}
+                for j in judgments
+            ],
+            "metadata": metadata or {},
+        }})
+        return f"{reconciler}@{version}"
+
     def record_relationship(self, subject_id: str, rel: str, object_id: str,
                             note: str = "", method: str = "derived",
                             actor: str = "owner") -> None:
@@ -298,6 +341,7 @@ class CanonicalLog:
         beliefs: dict[str, dict] = {}
         evidence: dict[str, dict] = {}
         relationships: list[dict] = []
+        reconciled_pairs: list[list[str]] = []
         for ev in self.events():
             t, p, at = ev["event_type"], ev["payload"], ev["recorded_at"]
             if t == "EvidenceRegistered":
@@ -331,12 +375,25 @@ class CanonicalLog:
                 b["retired_reason"] = p["reason"]
             elif t == "RelationshipRecorded":
                 relationships.append(dict(p["relationship"], recorded_at=at))
-            if t != "EvidenceRegistered" and t != "RelationshipRecorded":
+            elif t == "ReconciliationRun":
+                run = p["run"]
+                proposer = f"{run['reconciler']}@{run['version']}"
+                for j in run["judgments"]:
+                    reconciled_pairs.append(sorted([j["subject_id"], j["object_id"]]))
+                    if j["verdict"] != "UNRELATED":
+                        relationships.append({
+                            "subject_id": j["subject_id"], "rel": j["verdict"],
+                            "object_id": j["object_id"], "note": j.get("note", ""),
+                            "method": "derived", "proposer": proposer,
+                            "judge": run["judge"], "recorded_at": at,
+                        })
+            if t not in ("EvidenceRegistered", "RelationshipRecorded", "ReconciliationRun"):
                 bid = p.get("belief_id") or p.get("belief", {}).get("belief_id")
                 if bid and bid in beliefs:
                     beliefs[bid]["history"].append(
                         {"sequence": ev["sequence"], "event_type": t, "at": at, "payload": p})
-        return {"beliefs": beliefs, "evidence": evidence, "relationships": relationships}
+        return {"beliefs": beliefs, "evidence": evidence,
+                "relationships": relationships, "reconciled_pairs": reconciled_pairs}
 
     def why(self, belief_id: str, _seen: set[str] | None = None) -> dict:
         """Provenance walk: belief -> formation evidence and verification
