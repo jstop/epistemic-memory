@@ -33,12 +33,13 @@ def memory_recall(query: str = "", cluster: str = "", include_lineage: bool = Fa
     ref = dt.date.today()
     out = []
     q = query.lower()
+    by_id = engine.all_views_by_id()
     for b, _ in engine.load_all():
-        if cluster and cluster.lower() not in (b.get("cluster", "").lower()):
+        if cluster and cluster.lower() not in ((b.get("cluster") or "").lower()):
             continue
         if q and q not in (b.get("claim", "") + " " + b.get("id", "")).lower():
             continue
-        st = engine.stamped(b, ref)
+        st = engine.stamped(b, ref, by_id=by_id)
         if include_lineage:
             st["events"] = b.get("events", [])
         out.append(st)
