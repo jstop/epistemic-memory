@@ -34,17 +34,29 @@ beliefs:
   - at: '2026-09-10'
     op: BeliefFormed
 - id: library-surfaces
-  claim: Only Claude Code (and optionally Claude Desktop) are wired to the living library; claude.ai and
-    ChatGPT connectors are not yet built
+  claim: Only Claude Code is wired to the living library; Claude Desktop runs the epistemic-workbench
+    MCP server but not the living library, and claude.ai / ChatGPT remote connectors are not yet built
   method: observed
   volatility: status
   cluster: Living library system
   observed_at: '2026-08-19'
+  verified_at: '2026-09-10'
   contested: false
   unsupported: false
   links:
   - library-home
   reconstructed: true
+  claim_history:
+  - at: '2026-09-10'
+    claim: Only Claude Code (and optionally Claude Desktop) are wired to the living library; claude.ai
+      and ChatGPT connectors are not yet built
+  - at: '2026-09-10'
+    claim: Only Claude Code is wired to the living library; Claude Desktop runs the epistemic-workbench
+      MCP server but not the living library, and claude.ai / ChatGPT remote connectors are not yet built
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+  - at: '2026-09-10'
+    op: VerificationRecorded
+  - at: '2026-09-10'
+    op: BeliefRestated

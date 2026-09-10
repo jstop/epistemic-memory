@@ -58,12 +58,15 @@ beliefs:
   anchor: git -C ~/workspace/epistemic/mapper log -1 --format=%cd
   anchor_cost: cheap
   observed_at: '2026-06-07'
+  verified_at: '2026-09-10'
   contested: false
   unsupported: true
   reconstructed: true
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+  - at: '2026-09-10'
+    op: VerificationRecorded
 - id: epist-mapper-tests
   claim: epistemic-mapper is at 31/32 tests passing, with a known dedup-normalization failure
   method: observed
@@ -72,6 +75,7 @@ beliefs:
   anchor: cd ~/workspace/epistemic/mapper && npm test
   anchor_cost: expensive
   observed_at: '2026-06-07'
+  verified_at: '2026-09-10'
   contested: false
   unsupported: false
   links:
@@ -80,6 +84,8 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+  - at: '2026-09-10'
+    op: VerificationRecorded
 - id: epist-oldpaths-gone
   claim: The old paths ~/EPISTEMIC_TOOLS, ~/EPISTEMIC_WORKBENCH, ~/workspace/epistemic-mapper no longer
     exist
@@ -104,12 +110,15 @@ beliefs:
   anchor: test -d ~/workspace/Claude_Desktop/epistemics && echo present || echo gone
   anchor_cost: cheap
   observed_at: '2026-06-07'
+  verified_at: '2026-09-10'
   contested: false
   unsupported: false
   reconstructed: true
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+  - at: '2026-09-10'
+    op: VerificationRecorded
 - id: epist-workbench-branch
   claim: The workbench active branch is feature/workbench-editor-provenance
   method: observed
@@ -118,6 +127,7 @@ beliefs:
   anchor: git -C ~/workspace/epistemic/workbench branch --show-current
   anchor_cost: cheap
   observed_at: '2026-06-07'
+  verified_at: '2026-09-10'
   contested: false
   unsupported: false
   links:
@@ -126,6 +136,8 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+  - at: '2026-09-10'
+    op: VerificationRecorded
 - id: epist-workbench-identity
   claim: workbench/ is the epistemic-workbench MCP server (public repo jstop/epistemic-workbench)
   method: observed
@@ -148,6 +160,7 @@ beliefs:
   anchor: ls -d ~/workspace/epistemic/workspaces/*/ 2>/dev/null | wc -l | tr -d ' '
   anchor_cost: cheap
   observed_at: '2026-06-07'
+  verified_at: '2026-09-10'
   contested: false
   unsupported: false
   links:
@@ -156,6 +169,8 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+  - at: '2026-09-10'
+    op: VerificationRecorded
 - id: epist-workspaces-noremote
   claim: Each epistemic research workspace is a local git repo with no remote
   method: observed
