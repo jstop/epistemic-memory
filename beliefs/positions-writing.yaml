@@ -1,0 +1,42 @@
+# AUTO-GENERATED projection of canonical.db — DO NOT HAND-EDIT.
+# Edits here never become canonical state; write through the MCP tools or
+# the engine CLI, then regenerate with: python engine.py project
+generated: true
+beliefs:
+- id: chat-accountable-identity-thesis
+  claim: Josh's core public thesis is that networks need accountable identity as a global primitive so
+    responsibility can operate at global scale
+  method: asserted
+  volatility: preference
+  cluster: Positions & writing
+  observed_at: '2026-09-09'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: chat-mind-simulation-position
+  claim: Josh is developing a philosophical position connecting mind-as-simulation, shared moral agency,
+    and his epistemic-network work
+  method: asserted
+  volatility: status
+  cluster: Positions & writing
+  observed_at: '2026-09-07'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: chat-thesis-accessibility-work
+  claim: Josh is reworking his accountable-identity thesis into a piece accessible to a general audience
+  method: asserted
+  volatility: status
+  cluster: Positions & writing
+  observed_at: '2026-09-09'
+  contested: false
+  unsupported: false
+  links:
+  - chat-accountable-identity-thesis
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed

@@ -1,0 +1,30 @@
+# AUTO-GENERATED projection of canonical.db — DO NOT HAND-EDIT.
+# Edits here never become canonical state; write through the MCP tools or
+# the engine CLI, then regenerate with: python engine.py project
+generated: true
+beliefs:
+- id: chat-model3-carliving
+  claim: 'Josh is outfitting his Model 3 for car living: electric-only cooking and water systems, currently
+    evaluating a power station'
+  method: asserted
+  volatility: status
+  cluster: Vehicle & travel
+  observed_at: '2026-09-07'
+  contested: false
+  unsupported: false
+  links:
+  - chat-tesla-model3
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: chat-tesla-model3
+  claim: Josh drives a Tesla Model 3
+  method: asserted
+  volatility: structural
+  cluster: Vehicle & travel
+  observed_at: '2026-09-07'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed

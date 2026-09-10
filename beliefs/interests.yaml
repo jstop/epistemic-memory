@@ -1,0 +1,17 @@
+# AUTO-GENERATED projection of canonical.db — DO NOT HAND-EDIT.
+# Edits here never become canonical state; write through the MCP tools or
+# the engine CLI, then regenerate with: python engine.py project
+generated: true
+beliefs:
+- id: chat-mideast-history-study
+  claim: Josh studies Israel-Palestine history and early Islamic history in depth through extended AI
+    conversations
+  method: asserted
+  volatility: preference
+  cluster: Interests
+  observed_at: '2026-09-09'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed

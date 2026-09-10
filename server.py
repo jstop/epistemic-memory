@@ -20,6 +20,7 @@ import datetime as dt
 from mcp.server.fastmcp import FastMCP
 
 import engine
+import ingest
 import reconciler
 
 mcp = FastMCP("epistemic-memory")
@@ -161,6 +162,36 @@ def memory_reconcile_apply(judgments: list[dict], judge: str) -> dict:
     Relationships (and dependency-aware stance effects for DEPENDS_ON) project from the
     event immediately; nothing is ever overwritten and a later pass may judge anew."""
     return reconciler.apply(judgments, judge=judge)
+
+
+@mcp.tool()
+def memory_ingest_pass(source_path: str, limit: int = 5) -> dict:
+    """Stage the next unseen items from a data stream (currently: a Claude chat-history
+    export at `source_path`). Each item is snapshotted as content-addressed evidence —
+    registering it IS the ingestion cursor, so re-runs continue where the stream left
+    off. YOU are the extractor for staged items: read each excerpt and propose atomic,
+    durable, personally relevant natural-language beliefs (one fact per belief; owner
+    statements are method 'asserted'; skip pleasantries, transient tasks, and what the
+    repo already records — an item may legitimately yield zero beliefs). Then submit via
+    memory_ingest_apply with each proposal's evidence_id."""
+    staged = ingest.stage(source_path, limit)
+    return {
+        "staged": staged,
+        "next_step": ("extract beliefs, then call memory_ingest_apply with "
+                      "proposals=[{evidence_id, belief_id, claim, volatility, cluster, "
+                      "method?, observed_at?, note?}] and your extractor name")
+        if staged else "stream fully ingested — nothing pending",
+    }
+
+
+@mcp.tool()
+def memory_ingest_apply(proposals: list[dict], extractor: str) -> dict:
+    """Capture extraction proposals as beliefs grounded in their staged evidence.
+    Grounded by construction — every belief links to the snapshotted stream item it came
+    from, so memory_why reaches the original conversation. Duplicate ids are skipped and
+    reported; one bad proposal never blocks the rest. Afterward, run
+    memory_reconcile_pass to relate the new beliefs to existing history."""
+    return ingest.apply(proposals, extractor=extractor)
 
 
 if __name__ == "__main__":

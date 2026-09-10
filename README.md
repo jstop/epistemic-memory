@@ -15,7 +15,12 @@ owns memory; they all borrow it through the MCP server.
   semantic judging by an LLM client or human, one atomic ReconciliationRun event per
   pass; UNRELATED verdicts stop re-proposal. Never touches the capture path.
 - `server.py` — MCP server (stdio): `memory_recall / capture / verify / reconcile /
-  health / reindex / why / reconcile_pass / reconcile_apply`
+  health / reindex / why / reconcile_pass / reconcile_apply / ingest_pass / ingest_apply`
+- `ingest.py` — stream ingestion: stage unseen stream items as snapshotted evidence
+  (registering evidence IS the cursor — incremental, replay-safe, no state file), an
+  LLM/human extracts beliefs from staged items, apply captures them grounded in their
+  source. First adapter: Claude chat-history export. An item may yield zero beliefs;
+  its snapshot is preserved either way.
 - `migrate.py` — one-time pre-log YAML import (done; beliefs marked `reconstructed`)
 - Projections (all regenerable; hand-edits never become canonical — check drift with
   `python engine.py project --check`): `beliefs/*.yaml`, `events.jsonl`,
