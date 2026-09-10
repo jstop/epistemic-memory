@@ -15,6 +15,18 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+- id: chat-authenticity-institute
+  claim: The Authenticity Institute Inc. (a Delaware corporation) is the corporate entity behind Wes Kussmaul's
+    Osmio ecosystem; Josh reviewed/signed an NDA with it (~Feb 2026)
+  method: asserted
+  volatility: structural
+  cluster: Osmio
+  observed_at: '2026-02-02'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
 - id: chat-identity-consistency-paper
   claim: 'Josh has a research-paper direction: ''What is the minimum consistency required for digital
     identity?'' — classifying identity operations by weakest sufficient consistency class, plus a compositional

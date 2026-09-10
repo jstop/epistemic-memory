@@ -184,6 +184,18 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+- id: chat-umanitek-application
+  claim: Josh applied for a DevOps engineer role at Umanitek (umanitek.ai, Jan 2026) — an org he'd been
+    following since Nov 2025 — while still employed at Insperity
+  method: asserted
+  volatility: historical
+  cluster: People
+  observed_at: '2026-01-28'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
 - id: chat-wes-kussmaul
   claim: Wes Kussmaul is Osmio's founder; Josh works directly with him on communications and positioning
     (ad-hoc 'digital office' drop-ins, email; Authentiverse/authenticity enterprises live inside Osmio)

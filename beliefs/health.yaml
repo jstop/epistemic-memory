@@ -28,10 +28,11 @@ beliefs:
   - at: '2026-09-10'
     op: BeliefFormed
 - id: chat-long-covid
-  claim: 'Josh has long COVID (2+ years): recurrent illness (~a dozen times/year), systemic inflammation
-    that triggered afib treated with an ablation, measurable memory decline on a VA test, mast-cell activation/histamine
-    issues, glucose-stability issues, and 2026 peripheral vision loss in the left eye; managed via VA
-    specialty clinic plus a long-COVID specialist (Klimas-protocol isoprinosine cycling)'
+  claim: 'Josh has long COVID (2+ years, since ~2023): recurrent illness (~a dozen times/year), systemic
+    inflammation that triggered afib treated with an ablation (~late 2024; kava triggered a recurrence
+    Dec 2025), measurable memory decline on a VA test, mast-cell activation/histamine issues, glucose
+    instability, and 2026 peripheral vision loss in the left eye; managed via VA specialty clinic plus
+    a long-COVID specialist (Klimas-protocol isoprinosine cycling)'
   method: asserted
   volatility: structural
   cluster: Health
@@ -49,9 +50,17 @@ beliefs:
       activation/histamine issues, glucose-stability issues, and 2026 peripheral vision loss in the left
       eye; managed via VA specialty clinic plus a long-COVID specialist (Klimas-protocol isoprinosine
       cycling)'
+  - at: '2026-09-10'
+    claim: 'Josh has long COVID (2+ years, since ~2023): recurrent illness (~a dozen times/year), systemic
+      inflammation that triggered afib treated with an ablation (~late 2024; kava triggered a recurrence
+      Dec 2025), measurable memory decline on a VA test, mast-cell activation/histamine issues, glucose
+      instability, and 2026 peripheral vision loss in the left eye; managed via VA specialty clinic plus
+      a long-COVID specialist (Klimas-protocol isoprinosine cycling)'
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+  - at: '2026-09-10'
+    op: BeliefRestated
   - at: '2026-09-10'
     op: BeliefRestated
 - id: chat-no-alcohol

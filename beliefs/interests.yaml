@@ -63,6 +63,19 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+- id: chat-reading-canon
+  claim: 'Josh''s intellectual canon (2025-26 reading/influences): Axelrod''s The Evolution of Cooperation,
+    Ostrom''s commons governance, The Sovereign Individual, Balaji''s The Network State, Harari''s Nexus,
+    Jonathan Sacks''s Morality, Jabotinsky''s The Ethics of the Iron Wall'
+  method: asserted
+  volatility: preference
+  cluster: Interests
+  observed_at: '2025-10-31'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
 - id: chat-scuba
   claim: Josh scuba dives (previously certified; looked into a refresher course in Key Largo, May 2026)
   method: asserted
@@ -81,6 +94,18 @@ beliefs:
   volatility: preference
   cluster: Interests
   observed_at: '2026-06-11'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: chat-society-library
+  claim: Josh applied to volunteer with The Society Library (Dec 2025) after discovering their debate-mapping
+    / 'civilization-scale' epistemics program — the closest existing org to his epistemic-network vision
+  method: asserted
+  volatility: historical
+  cluster: Interests
+  observed_at: '2025-12-23'
   contested: false
   unsupported: false
   events:
