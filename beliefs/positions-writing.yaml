@@ -15,6 +15,19 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+- id: chat-aspirational-vs-real
+  claim: Much of Josh's Osmio work is aspirational thought-exploration, not shipped reality — he explicitly
+    corrects AIs that treat explored concepts (Roundspace, epistemology.info plans, formalized roles)
+    as more real than they are; distinguish exploration from operational fact when recalling his projects
+  method: asserted
+  volatility: preference
+  cluster: Positions & writing
+  observed_at: '2026-04-26'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
 - id: chat-epistemic-traceability-position
   claim: 'Josh''s public position (LinkedIn, Jul 2026): epistemic traceability is the necessary future
     of aligned AI, and context engineering is a question of epistemic imports; he built his first epistemic

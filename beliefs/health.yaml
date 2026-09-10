@@ -3,6 +3,18 @@
 # the engine CLI, then regenerate with: python engine.py project
 generated: true
 beliefs:
+- id: chat-adhd
+  claim: Josh identifies ADHD-type executive function as his '#2 problem' — task initiation and demand
+    avoidance are hard, but planning works when he programs toward a concrete end state
+  method: asserted
+  volatility: structural
+  cluster: Health
+  observed_at: '2026-05-11'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
 - id: chat-health-research
   claim: Josh researches histamine intolerance and long-COVID-adjacent health topics (neuromuscular medicine,
     DAO enzyme, low-histamine diet) for his own health management
@@ -16,18 +28,32 @@ beliefs:
   - at: '2026-09-10'
     op: BeliefFormed
 - id: chat-long-covid
-  claim: 'Josh has long COVID: multi-year post-COVID symptoms (frequent illness, inflammation, peripheral
-    vision loss in the left eye noted 2026), managed via the VA plus a long-COVID specialist following
-    a Klimas-community protocol (cycled isoprinosine/Imunovir)'
+  claim: 'Josh has long COVID (2+ years): recurrent illness (~a dozen times/year), systemic inflammation
+    that triggered afib treated with an ablation, measurable memory decline on a VA test, mast-cell activation/histamine
+    issues, glucose-stability issues, and 2026 peripheral vision loss in the left eye; managed via VA
+    specialty clinic plus a long-COVID specialist (Klimas-protocol isoprinosine cycling)'
   method: asserted
   volatility: structural
   cluster: Health
   observed_at: '2026-07-05'
   contested: false
   unsupported: false
+  claim_history:
+  - at: '2026-09-10'
+    claim: 'Josh has long COVID: multi-year post-COVID symptoms (frequent illness, inflammation, peripheral
+      vision loss in the left eye noted 2026), managed via the VA plus a long-COVID specialist following
+      a Klimas-community protocol (cycled isoprinosine/Imunovir)'
+  - at: '2026-09-10'
+    claim: 'Josh has long COVID (2+ years): recurrent illness (~a dozen times/year), systemic inflammation
+      that triggered afib treated with an ablation, measurable memory decline on a VA test, mast-cell
+      activation/histamine issues, glucose-stability issues, and 2026 peripheral vision loss in the left
+      eye; managed via VA specialty clinic plus a long-COVID specialist (Klimas-protocol isoprinosine
+      cycling)'
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+  - at: '2026-09-10'
+    op: BeliefRestated
 - id: chat-no-alcohol
   claim: Josh does not drink alcohol
   method: asserted

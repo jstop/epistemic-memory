@@ -3,9 +3,21 @@
 # the engine CLI, then regenerate with: python engine.py project
 generated: true
 beliefs:
+- id: chat-age
+  claim: Josh is around 40 years old (as of mid-2026)
+  method: asserted
+  volatility: structural
+  cluster: People
+  observed_at: '2026-05-10'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
 - id: chat-breakup-2026
-  claim: Josh's ~2-year relationship with Liz (age 40) ended around early June 2026 — she ended it; combined
-    with the job loss it precipitated the nomadic trip; the dog earlier associated with Josh was hers
+  claim: Josh's ~2-year relationship with Liz (both ~40) ended around early May 2026 — she ended it; they
+    shared a lease and he moved out ~May 10, going straight into Airbnb/nomadic life; the dog earlier
+    associated with Josh was hers
   method: asserted
   volatility: historical
   cluster: People
@@ -20,9 +32,15 @@ beliefs:
     claim: Josh's ~2-year relationship with Liz (age 40) ended around early June 2026 — she ended it;
       combined with the job loss it precipitated the nomadic trip; the dog earlier associated with Josh
       was hers
+  - at: '2026-09-10'
+    claim: Josh's ~2-year relationship with Liz (both ~40) ended around early May 2026 — she ended it;
+      they shared a lease and he moved out ~May 10, going straight into Airbnb/nomadic life; the dog earlier
+      associated with Josh was hers
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+  - at: '2026-09-10'
+    op: BeliefRestated
   - at: '2026-09-10'
     op: BeliefRestated
 - id: chat-dad-model-y
@@ -31,6 +49,18 @@ beliefs:
   volatility: structural
   cluster: People
   observed_at: '2026-08-24'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: chat-helping-homeless
+  claim: 'Josh actively helps homeless people he meets (Boca Raton, Mobile) — a practice he says Liz''s
+    example awakened in him: ''I take care of homeless people now'''
+  method: asserted
+  volatility: preference
+  cluster: People
+  observed_at: '2026-05-09'
   contested: false
   unsupported: false
   events:
@@ -95,24 +125,59 @@ beliefs:
     op: BeliefFormed
   - at: '2026-09-10'
     op: BeliefRestated
+- id: chat-mom-boston
+  claim: Josh's mom is in the Boston area (he bought her play tickets there, May 2026) — likely why his
+    route wintered in Boston Aug-Sep 2026
+  method: asserted
+  volatility: structural
+  cluster: People
+  observed_at: '2026-05-10'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
 - id: chat-osmio-collaborators
-  claim: Josh collaborates on the Osmio identity stack with Kevin (nDgoRose, undecillion.com) and Wes,
-    including exploring Utah SB0260/SB0275 state endorsement
+  claim: 'Josh''s Osmio circle: founder Wes Kussmaul; Kevin (nDgoRose, undecillion.com) exploring Utah
+    SB0260/SB0275 endorsement; Anto Jose (lead engineer for Wes); Dan, Husnain, and Marija working Alliance
+    memberships'
   method: asserted
   volatility: status
   cluster: People
   observed_at: '2026-08-17'
   contested: false
   unsupported: false
+  claim_history:
+  - at: '2026-09-10'
+    claim: Josh collaborates on the Osmio identity stack with Kevin (nDgoRose, undecillion.com) and Wes,
+      including exploring Utah SB0260/SB0275 state endorsement
+  - at: '2026-09-10'
+    claim: 'Josh''s Osmio circle: founder Wes Kussmaul; Kevin (nDgoRose, undecillion.com) exploring Utah
+      SB0260/SB0275 endorsement; Anto Jose (lead engineer for Wes); Dan, Husnain, and Marija working Alliance
+      memberships'
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+  - at: '2026-09-10'
+    op: BeliefRestated
 - id: chat-sister-dallas
   claim: Josh has a sister, located in the Dallas area as of July 2026
   method: asserted
   volatility: structural
   cluster: People
   observed_at: '2026-07-10'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: chat-wes-kussmaul
+  claim: Wes Kussmaul is Osmio's founder; Josh works directly with him on communications and positioning
+    (ad-hoc 'digital office' drop-ins, email; Authentiverse/authenticity enterprises live inside Osmio)
+  method: asserted
+  volatility: structural
+  cluster: People
+  observed_at: '2026-05-11'
   contested: false
   unsupported: false
   events:

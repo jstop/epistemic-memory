@@ -116,11 +116,35 @@ beliefs:
   - at: '2026-09-10'
     op: BeliefFormed
 - id: chat-osmio-role
-  claim: Josh is Osmio's Director of Communications (announced his role ~June 2026)
+  claim: Josh's Director of Communications role at Osmio was agreed with Wes but he noted (Apr 2026) it
+    hadn't become a functional role with responsibilities — 'a lot of aspirations remain'; by June 2026
+    he was drafting the role announcement
   method: asserted
   volatility: structural
   cluster: Osmio
   observed_at: '2026-06-04'
+  contested: false
+  unsupported: false
+  claim_history:
+  - at: '2026-09-10'
+    claim: Josh is Osmio's Director of Communications (announced his role ~June 2026)
+  - at: '2026-09-10'
+    claim: Josh's Director of Communications role at Osmio was agreed with Wes but he noted (Apr 2026)
+      it hadn't become a functional role with responsibilities — 'a lot of aspirations remain'; by June
+      2026 he was drafting the role announcement
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+  - at: '2026-09-10'
+    op: BeliefRestated
+- id: chat-osmio-tensions
+  claim: 'Josh has strategic tensions with Wes''s Osmio leadership: he prefers concrete product wedges
+    (solar, specific buyers) over broad pitching, and was frustrated by a wasted pitch-deck week; Wes
+    prioritizes the ''no-yes'' age-verification demo'
+  method: asserted
+  volatility: status
+  cluster: Osmio
+  observed_at: '2026-04-23'
   contested: false
   unsupported: false
   events:
@@ -151,17 +175,26 @@ beliefs:
   - at: '2026-09-10'
     op: BeliefFormed
 - id: chat-reliableid-domain
-  claim: Josh runs a reliableid.com Zoho mail identity (joshua.stein@reliableid.com) for the identity/Osmio
-    work
+  claim: reliableid.com is Wes Kussmaul's/Osmio's domain (wes@reliableid.com); Josh has joshua.stein@reliableid.com
+    on it via Zoho for the identity work
   method: asserted
   volatility: structural
   cluster: Osmio
   observed_at: '2026-06-08'
   contested: false
   unsupported: false
+  claim_history:
+  - at: '2026-09-10'
+    claim: Josh runs a reliableid.com Zoho mail identity (joshua.stein@reliableid.com) for the identity/Osmio
+      work
+  - at: '2026-09-10'
+    claim: reliableid.com is Wes Kussmaul's/Osmio's domain (wes@reliableid.com); Josh has joshua.stein@reliableid.com
+      on it via Zoho for the identity work
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+  - at: '2026-09-10'
+    op: BeliefRestated
 - id: chat-ssi-outreach
   claim: Josh actively engages SSI/identity thought leaders in public discourse to position Osmio — replies
     and outreach involving Eric Pol, Christopher Allen, Phil Windley's synthesis, and Kaliya Young
@@ -181,6 +214,19 @@ beliefs:
   volatility: status
   cluster: Osmio
   observed_at: '2026-05-19'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: chat-zk-group-moi
+  claim: ZK Group is the commercial entity building on Osmio's governance layer; its product MOI ('My
+    Own Information') is a personal data vault — age-verification 'no-yes' angle (no-yes.org), healthcare
+    records clawback as beachhead; 'Trusted and True' (Wes's dating venture) is another authenticity enterprise
+  method: asserted
+  volatility: status
+  cluster: Osmio
+  observed_at: '2026-04-16'
   contested: false
   unsupported: false
   events:
