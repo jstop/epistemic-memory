@@ -339,8 +339,8 @@ class CanonicalLog:
         return {"beliefs": beliefs, "evidence": evidence, "relationships": relationships}
 
     def why(self, belief_id: str, _seen: set[str] | None = None) -> dict:
-        """Provenance walk: belief -> evidence (with content availability) and
-        recursively into premises."""
+        """Provenance walk: belief -> formation evidence and verification
+        evidence (with content availability), recursively into premises."""
         seen = _seen or set()
         if belief_id in seen:
             return {"belief_id": belief_id, "cycle": True}
@@ -349,16 +349,26 @@ class CanonicalLog:
         b = state["beliefs"].get(belief_id)
         if b is None:
             raise ValueError(f"no belief '{belief_id}'")
-        ev = []
-        for eid in b["evidence_ids"]:
+
+        def enrich(eid):
             e = state["evidence"][eid]
-            ev.append(dict(e, content_available=bool(e["digest"] and self.store.has(e["digest"]))))
+            return dict(e, content_available=bool(e["digest"] and self.store.has(e["digest"])))
+
+        ev = [enrich(eid) for eid in b["evidence_ids"]]
+        verifications = [
+            {"verdict": h["payload"]["verdict"], "at": h["at"],
+             "command": h["payload"].get("command"),
+             "evidence": enrich(h["payload"]["evidence_id"])
+                         if h["payload"].get("evidence_id") else None}
+            for h in b["history"] if h["event_type"] == "VerificationRecorded"
+        ]
         return {
             "belief_id": belief_id,
             "claim": b["claim"],
             "method": b["method"],
             "unsupported": b.get("unsupported", False),
             "evidence": ev,
+            "verifications": verifications,
             "premises": [self.why(pid, seen) for pid in b["premise_ids"]],
         }
 

@@ -149,6 +149,11 @@ class SubstrateTest(unittest.TestCase):
         self.assertEqual(self.log.evidence_content(ev_id), b"38 workspaces\n")
         b = self.log.state()["beliefs"][bid]
         self.assertIsNotNone(b["verified_at"])
+        # 'Why do you believe this?' surfaces the verification and its evidence.
+        why = self.log.why(bid)
+        self.assertEqual(why["verifications"][0]["verdict"], "verified")
+        self.assertEqual(why["verifications"][0]["evidence"]["evidence_id"], ev_id)
+        self.assertTrue(why["verifications"][0]["evidence"]["content_available"])
 
     def test_failed_verification_contests_belief(self):
         bid, _ = self._observed_belief()
