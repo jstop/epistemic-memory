@@ -90,19 +90,32 @@ beliefs:
   - at: '2026-09-10'
     op: BeliefFormed
 - id: chat-osmio-origin-story
-  claim: 'Josh''s path to Osmio, in his words: recognizing the existential crisis of information technology
-    powerful enough to manipulate human agency at scale -> deciding to use that technology to empower
-    himself (AI enablement, quantified self, personal data) -> My Data Global -> introduced to Osmio when
-    Wes''s assistant reached out'
+  claim: 'Josh''s path to Osmio, in his words: ~late 2024, trying to make sense of transformer AI''s power
+    to influence decisions, he worked on a zero-trust personal-data idea and shared it in My Data Global;
+    Wes Kussmaul''s assistant reached out and introduced them; the existential-crisis-of-information-technology
+    framing is his canonical origin'
   method: asserted
   volatility: historical
   cluster: Osmio
   observed_at: '2026-06-04'
   contested: false
   unsupported: false
+  claim_history:
+  - at: '2026-09-10'
+    claim: 'Josh''s path to Osmio, in his words: recognizing the existential crisis of information technology
+      powerful enough to manipulate human agency at scale -> deciding to use that technology to empower
+      himself (AI enablement, quantified self, personal data) -> My Data Global -> introduced to Osmio
+      when Wes''s assistant reached out'
+  - at: '2026-09-10'
+    claim: 'Josh''s path to Osmio, in his words: ~late 2024, trying to make sense of transformer AI''s
+      power to influence decisions, he worked on a zero-trust personal-data idea and shared it in My Data
+      Global; Wes Kussmaul''s assistant reached out and introduced them; the existential-crisis-of-information-technology
+      framing is his canonical origin'
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+  - at: '2026-09-10'
+    op: BeliefRestated
 - id: chat-osmio-recruiting
   claim: Josh maintains an Osmio recruiting list — Iddo Drori, Grace (Rebecca) Rachmany, Kaliya Young,
     Doc Searls — targeting Wes's 'non-naive collegial' profile as the team archetype
@@ -116,9 +129,9 @@ beliefs:
   - at: '2026-09-10'
     op: BeliefFormed
 - id: chat-osmio-role
-  claim: Josh's Director of Communications role at Osmio was agreed with Wes but he noted (Apr 2026) it
-    hadn't become a functional role with responsibilities — 'a lot of aspirations remain'; by June 2026
-    he was drafting the role announcement
+  claim: Josh accepted the Director of Communications role at Osmio around late 2025 ('a few months ago'
+    as of Mar 2026), agreed with Wes; through spring 2026 it remained aspirational rather than functional
+    — he drafted announcements repeatedly (Mar and Jun 2026) while noting 'a lot of aspirations remain'
   method: asserted
   volatility: structural
   cluster: Osmio
@@ -132,9 +145,16 @@ beliefs:
     claim: Josh's Director of Communications role at Osmio was agreed with Wes but he noted (Apr 2026)
       it hadn't become a functional role with responsibilities — 'a lot of aspirations remain'; by June
       2026 he was drafting the role announcement
+  - at: '2026-09-10'
+    claim: Josh accepted the Director of Communications role at Osmio around late 2025 ('a few months
+      ago' as of Mar 2026), agreed with Wes; through spring 2026 it remained aspirational rather than
+      functional — he drafted announcements repeatedly (Mar and Jun 2026) while noting 'a lot of aspirations
+      remain'
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+  - at: '2026-09-10'
+    op: BeliefRestated
   - at: '2026-09-10'
     op: BeliefRestated
 - id: chat-osmio-tensions

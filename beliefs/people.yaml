@@ -43,6 +43,19 @@ beliefs:
     op: BeliefRestated
   - at: '2026-09-10'
     op: BeliefRestated
+- id: chat-career-background
+  claim: 'Josh is a former Navy nuclear engineer, then a DevOps/platform engineer (~10 years, AWS/Terraform/IaC),
+    and a standup comedian — his own one-line bio: ''former Navy nuclear engineer, DevOps guy, and standup
+    comedian'''
+  method: asserted
+  volatility: structural
+  cluster: People
+  observed_at: '2026-03-24'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
 - id: chat-dad-model-y
   claim: Josh's dad drives a Tesla Model Y (no factory tow hitch)
   method: asserted

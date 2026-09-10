@@ -28,6 +28,19 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+- id: chat-covenant-protocol
+  claim: 'Josh authored ''The Covenant Protocol'' (Mar 2026): a paper applying six design patterns from
+    Ostrom''s commons governance and Axelrod''s cooperation research to accountable identity infrastructure
+    — naming the ''accountability gap'' between cryptographic capacity and institutional obligation'
+  method: asserted
+  volatility: status
+  cluster: Positions & writing
+  observed_at: '2026-03-30'
+  contested: false
+  unsupported: false
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
 - id: chat-epistemic-traceability-position
   claim: 'Josh''s public position (LinkedIn, Jul 2026): epistemic traceability is the necessary future
     of aligned AI, and context engineering is a question of epistemic imports; he built his first epistemic
@@ -76,6 +89,20 @@ beliefs:
   unsupported: false
   links:
   - chat-accountable-identity-thesis
+  events:
+  - at: '2026-09-10'
+    op: BeliefFormed
+- id: chat-unsent-drafts-pattern
+  claim: 'Josh''s self-identified pattern: he produces drafts upon drafts of outreach, announcements,
+    and essays to people he respects but historically doesn''t send or post them — ''give me something
+    I think actually matters and suddenly I need one more proof of concept''; breaking that silence is
+    an explicit recurring goal'
+  method: asserted
+  volatility: preference
+  cluster: Positions & writing
+  observed_at: '2026-03-24'
+  contested: false
+  unsupported: false
   events:
   - at: '2026-09-10'
     op: BeliefFormed
