@@ -42,8 +42,9 @@ beliefs:
   claim: 'Josh has long COVID (2+ years, since ~2023): recurrent illness (~a dozen times/year), systemic
     inflammation with cardiac involvement (myocarditis; afib treated by ablation ~late 2024, kava-triggered
     recurrence Dec 2025), measurable memory decline on a VA test, mast-cell activation/histamine issues,
-    glucose instability, and 2026 peripheral vision loss in the left eye; managed via VA specialty clinic
-    plus a long-COVID specialist (Klimas-protocol isoprinosine cycling)'
+    glucose instability, and 2026 peripheral vision loss in the left eye; care via VA specialty clinic
+    plus a long-COVID specialist, with whom a Klimas-protocol isoprinosine regimen was discussed (whether
+    he takes it is not evidenced)'
   method: asserted
   volatility: structural
   cluster: Health
@@ -73,9 +74,18 @@ beliefs:
       recurrence Dec 2025), measurable memory decline on a VA test, mast-cell activation/histamine issues,
       glucose instability, and 2026 peripheral vision loss in the left eye; managed via VA specialty clinic
       plus a long-COVID specialist (Klimas-protocol isoprinosine cycling)'
+  - at: '2026-09-10'
+    claim: 'Josh has long COVID (2+ years, since ~2023): recurrent illness (~a dozen times/year), systemic
+      inflammation with cardiac involvement (myocarditis; afib treated by ablation ~late 2024, kava-triggered
+      recurrence Dec 2025), measurable memory decline on a VA test, mast-cell activation/histamine issues,
+      glucose instability, and 2026 peripheral vision loss in the left eye; care via VA specialty clinic
+      plus a long-COVID specialist, with whom a Klimas-protocol isoprinosine regimen was discussed (whether
+      he takes it is not evidenced)'
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+  - at: '2026-09-10'
+    op: BeliefRestated
   - at: '2026-09-10'
     op: BeliefRestated
   - at: '2026-09-10'

@@ -52,6 +52,9 @@
   .flag { display:inline-block; font-size:10px; padding:0 6px; border-radius:8px; background:#f0c48a; color:#5a3400; margin-left:6px }
   .linkish { color:var(--accent); cursor:pointer; text-decoration:underline; font-size:12.5px }
   .ref { font-size:11.5px; color:var(--muted); font-family: ui-monospace, Menlo, monospace }
+  mark { background:#fff1a8; padding:0 2px; border-radius:2px }
+  .span { border-left:3px solid #e6c200; background:#fffbe6; padding:6px 10px; margin:6px 0; font-size:13px }
+  .span .who { font-size:11px; color:var(--muted); font-weight:600 }
 </style>
 </head>
 <body>
@@ -127,6 +130,11 @@ function renderDetail(){
       <button data-a="next">Skip<kbd>↓</kbd></button>
     </div>
     ${b.note?`<section><h3>Extractor note</h3>${esc(b.note)}</section>`:''}
+    <section><h3>Grounding — exact source text this rests on</h3>
+      ${b.grounding&&b.grounding.length?b.grounding.map(g=>`<div class="span"><div class="who">${esc(g.author||'?')} · ${esc(g.at||'')} · message ${g.message??'—'} · ${esc(g.evidence_id)}</div>${esc(g.quote)}</div>`).join('')
+        :'<div class="row">no exact spans recorded — belief cites a whole conversation (pre-grounding extraction); use "Show full conversation" to inspect</div>'}
+      ${b.interpretations&&b.interpretations.length?`<div class="row" style="margin-top:8px">Interpretations about this belief: ${b.interpretations.map(i=>`<div>· <i>${esc(i.kind)}</i> — ${esc(i.statement)} <span class="ref">${esc(i.interpreter)}</span></div>`).join('')}</div>`:''}
+    </section>
     <section><h3>Evidence — why this is believed</h3>
       ${b.evidence.length?b.evidence.map(e=>`<div class="ev">
           <div class="name">${esc(e.name)} <span class="tag">${esc(e.role||'')}</span> <span class="tag">${e.messages} messages</span></div>
@@ -149,7 +157,14 @@ async function showTranscript(eid, link){
   const r = await fetch('/api/evidence/'+eid); const j = await r.json();
   if (!r.ok) return toast('✗ '+j.error);
   if (j.transcript) {
-    box.innerHTML = j.transcript.map(m=>`<div class="msg ${m.role}"><span class="who">${esc(m.role)} · ${esc(m.at)}</span>${(m.flags||[]).map(f=>`<span class="flag">${esc(f)}</span>`).join('')}\n${esc(m.text)}</div>`).join('');
+    const cur = selected;
+    box.innerHTML = j.transcript.map((m,i)=>{
+      const mine = (j.spans||[]).filter(s=>s.message===i).sort((a,b)=>a.start-b.start);
+      let html='', pos=0;
+      for (const s of mine) { if (s.start<pos) continue; html += esc(m.text.slice(pos,s.start)) + `<mark title="${esc(s.belief_id)}">${esc(m.text.slice(s.start,s.end))}</mark>`; pos=s.end; }
+      html += esc(m.text.slice(pos));
+      return `<div class="msg ${m.role}"><span class="who">${esc(m.role)} · ${esc(m.at)} · #${i}</span>${(m.flags||[]).map(f=>`<span class="flag">${esc(f)}</span>`).join('')}\n${html}</div>`;
+    }).join('');
   } else {
     box.innerHTML = `<pre>${esc(j.raw||'(no content)')}</pre>`;
   }

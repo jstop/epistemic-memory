@@ -46,6 +46,7 @@ EVENT_TYPES = (
     "RelationshipRecorded",
     "ReconciliationRun",
     "VisibilityChanged",
+    "InterpretationRecorded",
 )
 
 RELATIONSHIPS = (
@@ -187,6 +188,7 @@ class CanonicalLog:
                     unsupported: bool = False,
                     observed_at: str | None = None,
                     metadata: dict | None = None,
+                    grounding: list[dict] | None = None,
                     actor: str = "owner") -> str:
         evidence_ids = list(evidence_ids or [])
         premise_ids = list(premise_ids or [])
@@ -194,6 +196,13 @@ class CanonicalLog:
             raise ValueError(f"method '{method}' not in {METHODS}")
         if volatility not in VOLATILITIES:
             raise ValueError(f"volatility '{volatility}' not in {VOLATILITIES}")
+        state = self.state()
+        # Grounding spans are provenance facts; a grounded belief is evidenced
+        # by the evidence its spans live in.
+        spans = [self.resolve_span(g, state) for g in (grounding or [])]
+        for sp in spans:
+            if sp["evidence_id"] not in evidence_ids:
+                evidence_ids.append(sp["evidence_id"])
         # Structural method firewall. NOTE: these checks use only the ids
         # passed in — capture never requires retrieval or reconciliation.
         if not unsupported:
@@ -203,7 +212,6 @@ class CanonicalLog:
             if method in ("derived", "inferred") and not premise_ids:
                 raise ValueError(
                     f"method '{method}' requires premise_ids (or unsupported=True)")
-        state = self.state()
         if belief_id in state["beliefs"]:
             raise ValueError(f"belief '{belief_id}' already exists — restate or relate, never overwrite")
         for eid in evidence_ids:
@@ -225,17 +233,137 @@ class CanonicalLog:
             "unsupported": unsupported,
             "observed_at": observed_at or now_iso()[:10],
             "metadata": metadata or {},
+            "grounding": spans,
         }})
         return belief_id
+
+    # ---------------------------------------------------------- source spans
+    #
+    # A source span is a provenance FACT: exact text, located in canonical
+    # evidence, whose literal author (the message sender) is known. Anything
+    # further about a span — what kind of speech act it is, whether the owner
+    # endorsed it, whether an action happened — is interpretation, and lives
+    # in derived objects, never here.
+
+    def canonical_messages(self, e: dict) -> list[dict] | None:
+        """Messages [{author, at, text}] of a conversation snapshot, or None
+        when the evidence is not a transcript."""
+        if not e.get("digest"):
+            return None
+        raw = self.store.get(e["digest"])
+        if raw is None:
+            return None
+        try:
+            obj = json.loads(raw.decode("utf-8", "replace"))
+        except ValueError:
+            return None
+        if not isinstance(obj, dict):
+            return None
+        if "messages" in obj:
+            return [{"author": m.get("role", "?"), "at": m.get("at", ""), "text": m.get("text", "")}
+                    for m in obj["messages"]]
+        if "human_messages" in obj:
+            return [{"author": "human", "at": m.get("at", ""), "text": m.get("text", "")}
+                    for m in obj["human_messages"]]
+        return None
+
+    def resolve_span(self, span: dict, state: dict | None = None) -> dict:
+        """Validate a span against canonical evidence content and normalize it
+        to {evidence_id, message, start, end, quote}. The quote must occur
+        verbatim; offsets are computed if absent. Rejects anything that does
+        not point at real text."""
+        state = state or self.state()
+        eid = span.get("evidence_id")
+        quote = span.get("quote") or ""
+        if not eid or eid not in state["evidence"]:
+            raise ValueError(f"span needs a known evidence_id (got {eid!r})")
+        if not quote.strip():
+            raise ValueError("span needs a non-empty quote")
+        e = state["evidence"][eid]
+        messages = self.canonical_messages(e)
+        if messages is not None:
+            idx = span.get("message")
+            candidates = [idx] if idx is not None else range(len(messages))
+            for i in candidates:
+                if i < 0 or i >= len(messages):
+                    raise ValueError(f"span message index {i} out of range for {eid}")
+                pos = messages[i]["text"].find(quote)
+                if pos >= 0:
+                    return {"evidence_id": eid, "message": i, "start": pos,
+                            "end": pos + len(quote), "quote": quote}
+            raise ValueError(f"quote not found verbatim in evidence {eid}: {quote[:60]!r}")
+        raw = self.store.get(e["digest"]) if e.get("digest") else None
+        if raw is None:
+            raise ValueError(f"evidence {eid} has no snapshotted content to ground in")
+        text = raw.decode("utf-8", "replace")
+        pos = text.find(quote)
+        if pos < 0:
+            raise ValueError(f"quote not found verbatim in evidence {eid}: {quote[:60]!r}")
+        return {"evidence_id": eid, "message": None, "start": pos,
+                "end": pos + len(quote), "quote": quote}
+
+    def span_with_author(self, span: dict, state: dict | None = None) -> dict:
+        """A stored span plus its literal author, derived from canonical
+        evidence at read time (never stored redundantly)."""
+        state = state or self.state()
+        e = state["evidence"].get(span["evidence_id"])
+        author, at = None, None
+        if e is not None and span.get("message") is not None:
+            messages = self.canonical_messages(e)
+            if messages and 0 <= span["message"] < len(messages):
+                author = messages[span["message"]]["author"]
+                at = messages[span["message"]]["at"]
+        elif e is not None:
+            author = (e.get("metadata") or {}).get("author") or "evidence"
+        return dict(span, author=author, at=at)
 
     # ------------------------------------------------- later layers (append)
 
     def restate_belief(self, belief_id: str, new_claim: str, note: str = "",
+                       grounding: list[dict] | None = None,
                        actor: str = "owner") -> None:
         self._require_belief(belief_id)
+        spans = [self.resolve_span(g) for g in (grounding or [])]
         self._append("BeliefRestated", actor, {
             "belief_id": belief_id, "new_claim": new_claim, "note": note,
+            "grounding": spans,
         })
+
+    def record_interpretation(self, *, kind: str, statement: str,
+                              grounding: list[dict], interpreter: str,
+                              subjects: list[str] | None = None,
+                              supersedes: str | None = None,
+                              note: str = "", metadata: dict | None = None,
+                              actor: str = "owner") -> str:
+        """Record a DERIVED interpretation of history — a hypothesis, theme,
+        relation, inferred intention, attribution beyond literal authorship,
+        candidate belief... `kind` is a free label, not an ontology. It must
+        be grounded in real spans and name its interpreter (name@version).
+        It is not a belief: it carries no stance and never enters the ambient
+        index. A later interpretation may supersede it; nothing is erased.
+        The record that an interpretation was made is history; its content is
+        understanding, and stays revisable."""
+        if not kind.strip() or not statement.strip():
+            raise ValueError("interpretation needs a kind and a statement")
+        if not grounding:
+            raise ValueError("interpretation needs at least one grounding span")
+        if not interpreter.strip():
+            raise ValueError("interpretation needs an interpreter (name@version)")
+        state = self.state()
+        spans = [self.resolve_span(g, state) for g in grounding]
+        for bid in (subjects or []):
+            if bid not in state["beliefs"]:
+                raise ValueError(f"unknown subject belief: {bid}")
+        if supersedes and supersedes not in state["interpretations"]:
+            raise ValueError(f"unknown interpretation to supersede: {supersedes}")
+        iid = new_id("int")
+        self._append("InterpretationRecorded", actor, {"interpretation": {
+            "interpretation_id": iid, "kind": kind, "statement": statement,
+            "grounding": spans, "interpreter": interpreter,
+            "subjects": list(subjects or []), "supersedes": supersedes,
+            "note": note, "metadata": metadata or {},
+        }})
+        return iid
 
     def record_verification(self, belief_id: str, verdict: str,
                             output: str | None = None, command: str | None = None,
@@ -353,12 +481,14 @@ class CanonicalLog:
         evidence: dict[str, dict] = {}
         relationships: list[dict] = []
         reconciled_pairs: list[list[str]] = []
+        interpretations: dict[str, dict] = {}
         for ev in self.events():
             t, p, at = ev["event_type"], ev["payload"], ev["recorded_at"]
             if t == "EvidenceRegistered":
                 evidence[p["evidence"]["evidence_id"]] = dict(p["evidence"], recorded_at=at)
             elif t == "BeliefFormed":
                 b = dict(p["belief"])
+                b.setdefault("grounding", [])
                 b.update(contested=False, retired=False, retired_reason=None,
                          ambient=True, verified_at=None, recorded_at=at,
                          claim_history=[{"claim": b["claim"], "at": at, "origin": "formed"}],
@@ -368,7 +498,14 @@ class CanonicalLog:
                 b = beliefs[p["belief_id"]]
                 b["claim"] = p["new_claim"]
                 b["claim_history"].append({"claim": p["new_claim"], "at": at,
-                                           "origin": "restated", "note": p.get("note", "")})
+                                           "origin": "restated", "note": p.get("note", ""),
+                                           "grounding": p.get("grounding", [])})
+                b["grounding"] = b["grounding"] + p.get("grounding", [])
+            elif t == "InterpretationRecorded":
+                i = dict(p["interpretation"], recorded_at=at, superseded_by=None)
+                interpretations[i["interpretation_id"]] = i
+                if i.get("supersedes") and i["supersedes"] in interpretations:
+                    interpretations[i["supersedes"]]["superseded_by"] = i["interpretation_id"]
             elif t == "VerificationRecorded":
                 b = beliefs[p["belief_id"]]
                 if p["verdict"] == "verified":
@@ -400,13 +537,15 @@ class CanonicalLog:
                             "method": "derived", "proposer": proposer,
                             "judge": run["judge"], "recorded_at": at,
                         })
-            if t not in ("EvidenceRegistered", "RelationshipRecorded", "ReconciliationRun"):
+            if t not in ("EvidenceRegistered", "RelationshipRecorded", "ReconciliationRun",
+                         "InterpretationRecorded"):
                 bid = p.get("belief_id") or p.get("belief", {}).get("belief_id")
                 if bid and bid in beliefs:
                     beliefs[bid]["history"].append(
                         {"sequence": ev["sequence"], "event_type": t, "at": at, "payload": p})
         return {"beliefs": beliefs, "evidence": evidence,
-                "relationships": relationships, "reconciled_pairs": reconciled_pairs}
+                "relationships": relationships, "reconciled_pairs": reconciled_pairs,
+                "interpretations": interpretations}
 
     def why(self, belief_id: str, _seen: set[str] | None = None) -> dict:
         """Provenance walk: belief -> formation evidence and verification
@@ -437,8 +576,15 @@ class CanonicalLog:
             "claim": b["claim"],
             "method": b["method"],
             "unsupported": b.get("unsupported", False),
+            "grounding": [self.span_with_author(s, state) for s in b.get("grounding", [])],
             "evidence": ev,
             "verifications": verifications,
+            "interpretations": [
+                {"interpretation_id": i["interpretation_id"], "kind": i["kind"],
+                 "statement": i["statement"], "interpreter": i["interpreter"],
+                 "superseded_by": i["superseded_by"], "at": i["recorded_at"][:10]}
+                for i in state["interpretations"].values() if belief_id in i.get("subjects", [])
+            ],
             "premises": [self.why(pid, seen) for pid in b["premise_ids"]],
         }
 

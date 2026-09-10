@@ -39,8 +39,14 @@ CLI:
     python ingest.py stage   <export.json> [--limit N] [--out staged.json]
     python ingest.py apply   proposals.json --extractor <name>
 
-proposals.json: [{"evidence_id", "belief_id", "claim", "volatility",
-                  "cluster", "method"?, "observed_at"?, "note"?}]
+proposals.json: [{"evidence_id", "belief_id", "claim", "volatility", "cluster",
+                  "method"?, "observed_at"?, "note"?,
+                  "grounding"?: [{"quote", "message"?, "evidence_id"?}]}]
+grounding spans are provenance facts: each quote must occur verbatim in the
+evidence; the literal author (message sender) is derived on read. Prefer to
+ground every proposal — it is what lets a reviewer see exactly what a belief
+rests on. What a span MEANS (speech act, endorsement, whether an action
+happened) is interpretation, not recorded here.
 """
 from __future__ import annotations
 
@@ -178,6 +184,8 @@ def apply(proposals: list[dict], extractor: str, actor: str = "owner") -> dict:
             if p["belief_id"] in state["beliefs"]:
                 skipped.append(p["belief_id"])
                 continue
+            grounding = [dict(g, evidence_id=g.get("evidence_id") or p["evidence_id"])
+                         for g in (p.get("grounding") or [])]
             log.form_belief(
                 belief_id=p["belief_id"],
                 claim=p["claim"],
@@ -188,6 +196,7 @@ def apply(proposals: list[dict], extractor: str, actor: str = "owner") -> dict:
                 observed_at=p.get("observed_at"),
                 metadata={"extractor": extractor, "source": SOURCE,
                           "note": p.get("note", "")},
+                grounding=grounding,
                 actor=actor,
             )
             state = log.state()

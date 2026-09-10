@@ -133,6 +133,7 @@ def _view(bid: str, b: dict, relationships: list[dict]) -> dict:
         "premise_ids": list(b.get("premise_ids") or []),
         "claim_history": b["claim_history"],
         "events": [{"at": h["at"][:10], "op": h["event_type"]} for h in b["history"]],
+        "grounding": list(b.get("grounding") or []),
     }
 
 
@@ -297,7 +298,8 @@ def _after_write(result: dict) -> dict:
 def capture(belief: dict, evidence_content: str | None = None,
             evidence_uri: str | None = None,
             evidence_media_type: str = "text/plain",
-            premise_ids: list[str] | None = None) -> dict:
+            premise_ids: list[str] | None = None,
+            grounding: list[dict] | None = None) -> dict:
     """Validated write of a NEW belief as canonical events.
 
     Structural firewall: observed/asserted beliefs get their grounding from
@@ -339,6 +341,7 @@ def capture(belief: dict, evidence_content: str | None = None,
         unsupported=unsupported,
         observed_at=str(belief["observed_at"]),
         metadata={"kind": belief.get("kind"), "note": belief.get("note")},
+        grounding=grounding,
     )
     for target in belief.get("links") or []:
         try:
@@ -386,7 +389,8 @@ def run_anchor(belief_id: str) -> dict:
     return {"belief": stamped(v), "observed": (proc.stdout + proc.stderr).strip()}
 
 
-def reconcile(belief_id: str, new_claim: str, note: str) -> dict:
+def reconcile(belief_id: str, new_claim: str, note: str,
+              grounding: list[dict] | None = None) -> dict:
     """Restate a claim — with complete lineage, never silently. The previous
     text is preserved in full in canonical history; if the belief was
     contested, the reconciliation resolves the contradiction on record."""
@@ -394,11 +398,39 @@ def reconcile(belief_id: str, new_claim: str, note: str) -> dict:
     if v is None:
         raise ValueError(f"no belief '{belief_id}'")
     log = get_log()
-    log.restate_belief(belief_id, new_claim, note=note)
+    log.restate_belief(belief_id, new_claim, note=note, grounding=grounding)
     if v["contested"]:
         log.resolve_contradiction(belief_id, note=f"reconciled: {note}")
     v, _ = find(belief_id)
     return _after_write(stamped(v))
+
+
+def interpret(*, kind: str, statement: str, grounding: list[dict], interpreter: str,
+              subjects: list[str] | None = None, supersedes: str | None = None,
+              note: str = "") -> dict:
+    """Record a derived interpretation of history (hypothesis, theme, relation,
+    inferred intention...). Grounded in exact spans, named interpreter, no
+    stance, never in the ambient index, supersedable. Understanding, not fact."""
+    log = get_log()
+    iid = log.record_interpretation(kind=kind, statement=statement, grounding=grounding,
+                                    interpreter=interpreter, subjects=subjects,
+                                    supersedes=supersedes, note=note)
+    i = log.state()["interpretations"][iid]
+    return _after_write(dict(i, grounding=[log.span_with_author(sp) for sp in i["grounding"]]))
+
+
+def interpretations(belief_id: str | None = None, include_superseded: bool = False) -> list[dict]:
+    """Derived interpretations, optionally about one belief; current ones by default."""
+    log = get_log()
+    state = log.state()
+    out = []
+    for i in state["interpretations"].values():
+        if belief_id and belief_id not in i.get("subjects", []):
+            continue
+        if i["superseded_by"] and not include_superseded:
+            continue
+        out.append(dict(i, grounding=[log.span_with_author(sp, state) for sp in i["grounding"]]))
+    return out
 
 
 def retire(belief_id: str, reason: str) -> dict:

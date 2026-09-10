@@ -99,17 +99,30 @@ beliefs:
   - at: '2026-09-10'
     op: BeliefFormed
 - id: chat-jewish-identity
-  claim: Josh is Jewish — grew up in the suburbs going to Jewish camp, describes a family with hidden
-    traumas and dysfunction beneath a safe surface — and works through that identity in his writing
+  claim: 'Josh is Jewish (his own words: ''As a Jew'', ''I''m Jewish''). Separately, a poem brief he wrote
+    describes a perspective ''like someone who grew up safely in the suburbs going to Jewish camp'' with
+    hidden family trauma — plausibly autobiographical but framed as background for a persona, not stated
+    as fact'
   method: asserted
   volatility: structural
   cluster: People
   observed_at: '2026-06-12'
   contested: false
   unsupported: false
+  claim_history:
+  - at: '2026-09-10'
+    claim: Josh is Jewish — grew up in the suburbs going to Jewish camp, describes a family with hidden
+      traumas and dysfunction beneath a safe surface — and works through that identity in his writing
+  - at: '2026-09-10'
+    claim: 'Josh is Jewish (his own words: ''As a Jew'', ''I''m Jewish''). Separately, a poem brief he
+      wrote describes a perspective ''like someone who grew up safely in the suburbs going to Jewish camp''
+      with hidden family trauma — plausibly autobiographical but framed as background for a persona, not
+      stated as fact'
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+  - at: '2026-09-10'
+    op: BeliefRestated
 - id: chat-job-loss-2026
   claim: 'Josh was let go from Insperity in mid-May 2026 (the second firing that year from the same employer;
     offered 2-week severance against a release of claims) — combined with the breakup it precipitated
@@ -158,17 +171,26 @@ beliefs:
   - at: '2026-09-10'
     op: BeliefRestated
 - id: chat-mom-boston
-  claim: Josh's mom is in the Boston area (he bought her play tickets there, May 2026) — likely why his
-    route wintered in Boston Aug-Sep 2026
+  claim: Josh's mom appears to be in the Boston area (he looked for play tickets for her there, May 2026)
+    — an inference, not stated outright
   method: asserted
   volatility: structural
   cluster: People
   observed_at: '2026-05-10'
   contested: false
   unsupported: false
+  claim_history:
+  - at: '2026-09-10'
+    claim: Josh's mom is in the Boston area (he bought her play tickets there, May 2026) — likely why
+      his route wintered in Boston Aug-Sep 2026
+  - at: '2026-09-10'
+    claim: Josh's mom appears to be in the Boston area (he looked for play tickets for her there, May
+      2026) — an inference, not stated outright
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+  - at: '2026-09-10'
+    op: BeliefRestated
 - id: chat-osmio-collaborators
   claim: 'Josh''s Osmio circle: founder Wes Kussmaul; Kevin (nDgoRose, undecillion.com) exploring Utah
     SB0260/SB0275 endorsement; Anto Jose (lead engineer for Wes); Dan, Husnain, and Marija working Alliance
@@ -204,29 +226,47 @@ beliefs:
   - at: '2026-09-10'
     op: BeliefFormed
 - id: chat-umanitek-application
-  claim: Josh applied for a DevOps engineer role at Umanitek (umanitek.ai, Jan 2026) — an org he'd been
-    following since Nov 2025 — while still employed at Insperity
+  claim: Josh worked on an application for a DevOps engineer role at Umanitek (umanitek.ai, Jan 2026),
+    an org he'd followed since Nov 2025, while at Insperity; whether it was submitted is not evidenced
   method: asserted
   volatility: historical
   cluster: People
   observed_at: '2026-01-28'
   contested: false
   unsupported: false
+  claim_history:
+  - at: '2026-09-10'
+    claim: Josh applied for a DevOps engineer role at Umanitek (umanitek.ai, Jan 2026) — an org he'd been
+      following since Nov 2025 — while still employed at Insperity
+  - at: '2026-09-10'
+    claim: Josh worked on an application for a DevOps engineer role at Umanitek (umanitek.ai, Jan 2026),
+      an org he'd followed since Nov 2025, while at Insperity; whether it was submitted is not evidenced
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+  - at: '2026-09-10'
+    op: BeliefRestated
 - id: chat-wedding-officiant
-  claim: Josh officiated a friend's wedding in 2025, preparing a ceremony themed on cosmic wonder — life
-    emerging amid chaos and entropy
+  claim: A friend asked Josh to officiate their wedding (Feb 2025) and he drafted a cosmic-wonder-themed
+    ceremony script (May 2025); whether he officiated is not evidenced
   method: asserted
   volatility: historical
   cluster: People
   observed_at: '2025-02-08'
   contested: false
   unsupported: false
+  claim_history:
+  - at: '2026-09-10'
+    claim: Josh officiated a friend's wedding in 2025, preparing a ceremony themed on cosmic wonder —
+      life emerging amid chaos and entropy
+  - at: '2026-09-10'
+    claim: A friend asked Josh to officiate their wedding (Feb 2025) and he drafted a cosmic-wonder-themed
+      ceremony script (May 2025); whether he officiated is not evidenced
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+  - at: '2026-09-10'
+    op: BeliefRestated
 - id: chat-wes-kussmaul
   claim: Wes Kussmaul is Osmio's founder; Josh works directly with him on communications and positioning
     (ad-hoc 'digital office' drop-ins, email; Authentiverse/authenticity enterprises live inside Osmio)

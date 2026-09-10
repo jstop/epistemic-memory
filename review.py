@@ -142,6 +142,8 @@ def belief_payload(v: dict, by_id: dict, state: dict, log) -> dict:
         "relationships": [{"subject": r["subject_id"], "rel": r["rel"], "object": r["object_id"],
                            "note": r.get("note", "")} for r in rels],
         "extractor": (raw.get("metadata") or {}).get("extractor"),
+        "grounding": [log.span_with_author(sp, state) for sp in raw.get("grounding", [])],
+        "interpretations": engine.interpretations(v["id"]),
         "note": (raw.get("metadata") or {}).get("note"),
         "attribution_warning": attribution_warning,
     }
@@ -211,8 +213,17 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(404, {"error": "no such evidence"})
             t = transcript_of(log, e)
             raw = None if t is not None else (_decode(log, e) if e.get("digest") else None)
+            # spans of every belief grounded in this evidence (any snapshot of the same uri)
+            uris = {e.get("uri")}
+            same = {x["evidence_id"] for x in log.state()["evidence"].values() if x.get("uri") in uris}
+            spans = []
+            for b in log.state()["beliefs"].values():
+                for sp in b.get("grounding", []):
+                    if sp["evidence_id"] in same:
+                        spans.append(dict(sp, belief_id=b["belief_id"]))
             self._json(200, {"evidence": {k: e.get(k) for k in ("evidence_id", "uri", "digest", "media_type", "durability", "metadata")},
-                             "transcript": t, "raw": raw if isinstance(raw, str) else (json.dumps(raw, ensure_ascii=False, indent=1) if raw else None)})
+                             "transcript": t, "spans": spans,
+                             "raw": raw if isinstance(raw, str) else (json.dumps(raw, ensure_ascii=False, indent=1) if raw else None)})
         else:
             self._json(404, {"error": "not found"})
 

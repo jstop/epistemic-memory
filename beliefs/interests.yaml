@@ -101,29 +101,47 @@ beliefs:
   - at: '2026-09-10'
     op: BeliefFormed
 - id: chat-slam-poetry
-  claim: Josh writes and performs slam poetry alongside stand-up, working themes of Jewish identity, inherited
-    trauma, and decolonization
+  claim: 'Josh writes slam poetry (intensive phase June 2026: Jewish identity, inherited trauma, decolonization
+    themes) and sought comedy/poetry open mics on the road; performing poetry on stage is not evidenced'
   method: asserted
   volatility: preference
   cluster: Interests
   observed_at: '2026-06-11'
   contested: false
   unsupported: false
+  claim_history:
+  - at: '2026-09-10'
+    claim: Josh writes and performs slam poetry alongside stand-up, working themes of Jewish identity,
+      inherited trauma, and decolonization
+  - at: '2026-09-10'
+    claim: 'Josh writes slam poetry (intensive phase June 2026: Jewish identity, inherited trauma, decolonization
+      themes) and sought comedy/poetry open mics on the road; performing poetry on stage is not evidenced'
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+  - at: '2026-09-10'
+    op: BeliefRestated
 - id: chat-society-library
-  claim: Josh applied to volunteer with The Society Library (Dec 2025) after discovering their debate-mapping
-    / 'civilization-scale' epistemics program — the closest existing org to his epistemic-network vision
+  claim: Josh drafted a volunteer application to The Society Library (Dec 2025) after discovering their
+    debate-mapping program; whether it was submitted is not evidenced
   method: asserted
   volatility: historical
   cluster: Interests
   observed_at: '2025-12-23'
   contested: false
   unsupported: false
+  claim_history:
+  - at: '2026-09-10'
+    claim: Josh applied to volunteer with The Society Library (Dec 2025) after discovering their debate-mapping
+      / 'civilization-scale' epistemics program — the closest existing org to his epistemic-network vision
+  - at: '2026-09-10'
+    claim: Josh drafted a volunteer application to The Society Library (Dec 2025) after discovering their
+      debate-mapping program; whether it was submitted is not evidenced
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+  - at: '2026-09-10'
+    op: BeliefRestated
 - id: chat-standup-open-mics
   claim: 'Josh does stand-up comedy: working on material by mid-2024 (promoting an all-arts open mic at
     Filomena coffee shop Aug 2024, sets in progress Sep 2024), deliberate study through 2025 (Comedy Bible

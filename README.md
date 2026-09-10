@@ -1,6 +1,30 @@
 # Epistemic Memory — the living library
 
-Canonical, provenance-carrying belief store shared by every AI surface Josh uses.
+The provenance substrate and personal-memory projection of **Episteme** — a system
+meant to live alongside a person's information continuously, preserve how their
+understanding develops, and reason over that history without collapsing it into a
+static profile. This repo is Episteme's first real-world implementation layer, not
+its ceiling.
+
+```
+Episteme
+├── Provenance substrate        <- substrate.py (canonical history, evidence, spans)
+├── Personal memory projection  <- engine.py / server.py (beliefs, stance, MEMORY.md)
+├── Interpretation compiler     <- beginning: interpretations, reconciler, ingest
+├── Epistemic graph             <- emerging: relationships, dependency-aware stance
+├── Inquiry engine              <- later
+├── Attention allocation        <- later
+└── Agency / authorization      <- later
+```
+
+Governing principle, applied recursively: **history is canonical; understanding is
+derived.** The more interpretive something is, the less eager we are to put it in the
+substrate. Canonical: evidence (full transcripts with literal authorship), events,
+exact source spans. Derived and revisable: beliefs, stance, relationships, themes,
+speech acts, attribution beyond literal authorship, intentions, "did this happen".
+Episteme should preserve enough history that increasingly capable interpreters can
+revisit the past and derive better understanding from it later.
+
 Each belief is an atomic claim wrapped in an epistemic envelope (how it was learned,
 how fast it decays, how to re-check it, and its full append-only history). No client
 owns memory; they all borrow it through the MCP server.
@@ -8,7 +32,9 @@ owns memory; they all borrow it through the MCP server.
 - `canonical.db` + `evidence_store/` — the source of truth: append-only hash-chained
   event log + content-addressed evidence (gitignored; fully replayable)
 - `substrate.py` — the canonical event substrate (log, evidence store, replay, chain
-  verification, atomic reconciliation runs)
+  verification, atomic reconciliation runs, **source spans** — exact quotes located in
+  evidence with literal author derived on read — and **interpretations**: grounded,
+  attributed, supersedable derived objects that are not beliefs)
 - `engine.py` — read/logic layer: stance computation (dependency-aware), capture/verify/
   reconcile/retire as canonical events, projections + CLI
 - `reconciler.py` — async reconciliation: mechanical candidate generation (lexical),

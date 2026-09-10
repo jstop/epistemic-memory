@@ -17,16 +17,25 @@ beliefs:
     op: BeliefFormed
 - id: chat-authenticity-institute
   claim: The Authenticity Institute Inc. (a Delaware corporation) is the corporate entity behind Wes Kussmaul's
-    Osmio ecosystem; Josh reviewed/signed an NDA with it (~Feb 2026)
+    Osmio ecosystem; Josh reviewed its NDA text (~Feb 2026) — signing is not evidenced
   method: asserted
   volatility: structural
   cluster: Osmio
   observed_at: '2026-02-02'
   contested: false
   unsupported: false
+  claim_history:
+  - at: '2026-09-10'
+    claim: The Authenticity Institute Inc. (a Delaware corporation) is the corporate entity behind Wes
+      Kussmaul's Osmio ecosystem; Josh reviewed/signed an NDA with it (~Feb 2026)
+  - at: '2026-09-10'
+    claim: The Authenticity Institute Inc. (a Delaware corporation) is the corporate entity behind Wes
+      Kussmaul's Osmio ecosystem; Josh reviewed its NDA text (~Feb 2026) — signing is not evidenced
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+  - at: '2026-09-10'
+    op: BeliefRestated
 - id: chat-identity-consistency-paper
   claim: Josh received an AI-drafted paper proposal ('What is the minimum consistency required for digital
     identity?') and pasted it into a chat asking who to bring it to for collaboration (Aug 2026) — an
@@ -89,19 +98,33 @@ beliefs:
   - at: '2026-09-10'
     op: BeliefFormed
 - id: chat-osmio-keri-stack
-  claim: Josh is prototyping Osmio's identity layer on KERI/ACDC and evaluating the Cardano Foundation's
-    self-hostable Veridian wallet as the substrate
+  claim: Josh has been exploring and designing Osmio's identity layer on KERI/ACDC — mostly in chat design
+    sessions — and evaluated the Cardano Foundation's Veridian wallet hands-on (app installed, self-deployment
+    docs shared, Aug 2026); no shipped prototype is evidenced
   method: asserted
   volatility: status
   cluster: Osmio
   observed_at: '2026-08-21'
+  verified_at: '2026-09-10'
   contested: false
   unsupported: false
   links:
   - chat-osmio-mission
+  claim_history:
+  - at: '2026-09-10'
+    claim: Josh is prototyping Osmio's identity layer on KERI/ACDC and evaluating the Cardano Foundation's
+      self-hostable Veridian wallet as the substrate
+  - at: '2026-09-10'
+    claim: Josh has been exploring and designing Osmio's identity layer on KERI/ACDC — mostly in chat
+      design sessions — and evaluated the Cardano Foundation's Veridian wallet hands-on (app installed,
+      self-deployment docs shared, Aug 2026); no shipped prototype is evidenced
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+  - at: '2026-09-10'
+    op: VerificationRecorded
+  - at: '2026-09-10'
+    op: BeliefRestated
 - id: chat-osmio-mission
   claim: 'Osmio is Josh''s central project: grassroots, self-sovereign identity infrastructure aimed at
     accountable coordination and ''equal identity under one system of identity'''
@@ -149,17 +172,33 @@ beliefs:
   - at: '2026-09-10'
     op: BeliefRestated
 - id: chat-osmio-recruiting
-  claim: Josh maintains an Osmio recruiting list — Iddo Drori, Grace (Rebecca) Rachmany, Kaliya Young,
-    Doc Searls — targeting Wes's 'non-naive collegial' profile as the team archetype
+  claim: 'Josh drafted an Osmio recruiting list (May 2026: Iddo Drori, Grace (Rebecca) Rachmany, Kaliya
+    Young, Doc Searls) and discussed alignment strategies; no evidence any were contacted'
   method: asserted
   volatility: status
   cluster: Osmio
   observed_at: '2026-05-18'
+  verified_at: '2026-09-10'
   contested: false
   unsupported: false
+  claim_history:
+  - at: '2026-09-10'
+    claim: Josh maintains an Osmio recruiting list — Iddo Drori, Grace (Rebecca) Rachmany, Kaliya Young,
+      Doc Searls — targeting Wes's 'non-naive collegial' profile as the team archetype
+  - at: '2026-09-10'
+    claim: 'Josh drafted an Osmio recruiting list (May 2026: Iddo Drori, Grace (Rebecca) Rachmany, Kaliya
+      Young, Doc Searls) and discussed alignment strategies; no evidence any were contacted'
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+  - at: '2026-09-10'
+    op: VerificationRecorded
+  - at: '2026-09-10'
+    op: VerificationRecorded
+  - at: '2026-09-10'
+    op: VerificationRecorded
+  - at: '2026-09-10'
+    op: BeliefRestated
 - id: chat-osmio-role
   claim: Josh accepted the Director of Communications role at Osmio around late 2025 ('a few months ago'
     as of Mar 2026), agreed with Wes; through spring 2026 it remained aspirational rather than functional
@@ -197,11 +236,14 @@ beliefs:
   volatility: status
   cluster: Osmio
   observed_at: '2026-04-23'
+  verified_at: '2026-09-10'
   contested: false
   unsupported: false
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+  - at: '2026-09-10'
+    op: VerificationRecorded
 - id: chat-osmio-wedge-vpp
   claim: 'Josh''s Osmio adoption-wedge direction: sovereign infrastructure via solar virtual power plants
     and mesh networks, including exploring a solar business for Osmio'
@@ -257,17 +299,32 @@ beliefs:
   - at: '2026-09-10'
     op: BeliefRestated
 - id: chat-ssi-outreach
-  claim: Josh actively engages SSI/identity thought leaders in public discourse to position Osmio — replies
-    and outreach involving Eric Pol, Christopher Allen, Phil Windley's synthesis, and Kaliya Young
+  claim: Josh repeatedly DRAFTED replies and outreach to SSI/identity thought leaders (Eric Pol, Christopher
+    Allen, Phil Windley's synthesis, Kaliya Young) as exercises in positioning Osmio — none were sent
+    (owner confirmed); this is an instance of the unsent-drafts pattern, not a communication record
   method: asserted
   volatility: status
   cluster: Osmio
   observed_at: '2026-05-20'
+  verified_at: '2026-09-10'
   contested: false
   unsupported: false
+  claim_history:
+  - at: '2026-09-10'
+    claim: Josh actively engages SSI/identity thought leaders in public discourse to position Osmio —
+      replies and outreach involving Eric Pol, Christopher Allen, Phil Windley's synthesis, and Kaliya
+      Young
+  - at: '2026-09-10'
+    claim: Josh repeatedly DRAFTED replies and outreach to SSI/identity thought leaders (Eric Pol, Christopher
+      Allen, Phil Windley's synthesis, Kaliya Young) as exercises in positioning Osmio — none were sent
+      (owner confirmed); this is an instance of the unsent-drafts pattern, not a communication record
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+  - at: '2026-09-10'
+    op: BeliefRestated
+  - at: '2026-09-10'
+    op: VerificationRecorded
 - id: chat-tedx-ambition
   claim: Josh intends to give TEDx-style talks on the Osmio/identity thesis and had a stage-ready piece
     drafted (May 2026), planning to find and sign up for speaking opportunities
