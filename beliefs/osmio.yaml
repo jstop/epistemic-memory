@@ -28,18 +28,29 @@ beliefs:
   - at: '2026-09-10'
     op: BeliefFormed
 - id: chat-identity-consistency-paper
-  claim: 'Josh has a research-paper direction: ''What is the minimum consistency required for digital
-    identity?'' — classifying identity operations by weakest sufficient consistency class, plus a compositional
-    follow-up'
+  claim: Josh received an AI-drafted paper proposal ('What is the minimum consistency required for digital
+    identity?') and pasted it into a chat asking who to bring it to for collaboration (Aug 2026) — an
+    interest he engaged with, not a direction he articulated himself
   method: asserted
   volatility: status
   cluster: Osmio
   observed_at: '2026-08-03'
   contested: false
   unsupported: false
+  claim_history:
+  - at: '2026-09-10'
+    claim: 'Josh has a research-paper direction: ''What is the minimum consistency required for digital
+      identity?'' — classifying identity operations by weakest sufficient consistency class, plus a compositional
+      follow-up'
+  - at: '2026-09-10'
+    claim: Josh received an AI-drafted paper proposal ('What is the minimum consistency required for digital
+      identity?') and pasted it into a chat asking who to bring it to for collaboration (Aug 2026) — an
+      interest he engaged with, not a direction he articulated himself
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+  - at: '2026-09-10'
+    op: BeliefRestated
 - id: chat-osmio-charter
   claim: Josh describes Osmio as a digital municipality chartered at the ITU in Geneva in 2005 (out of
     the ITU World e-trust initiative, despite UN rejection) — a duly constituted public authority; he
@@ -198,6 +209,7 @@ beliefs:
   volatility: status
   cluster: Osmio
   observed_at: '2026-06-25'
+  verified_at: '2026-09-10'
   contested: false
   unsupported: false
   links:
@@ -205,6 +217,8 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+  - at: '2026-09-10'
+    op: VerificationRecorded
 - id: chat-personal-ai-keri-continuity
   claim: 'Josh wants his personal AI system anchored to KERI identity: his inputs vs AI outputs distinguishable
     and signed, with explicit categories separating private working thought from productionized claims'

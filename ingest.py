@@ -20,8 +20,19 @@ The flow keeps the library's division of labor:
     new beliefs to old ones is the reconciler's later pass.
 
 Extraction guidance for the judge: only durable, personally relevant, atomic
-claims (one fact per belief); statements the owner made are method 'asserted';
-skip pleasantries, transient tasks, and anything the repo/git already records.
+claims (one fact per belief); skip pleasantries, transient tasks, and anything
+the repo/git already records.
+
+ATTRIBUTION — the hard part. A human-sender message is NOT automatically the
+owner's own assertion. Human turns routinely contain pasted material: AI
+output from another session, other people's emails, articles, Reddit/LinkedIn
+posts, drafts written with an AI. Before attributing a claim to the owner,
+decide who authored the words: (a) the owner's own statement -> 'asserted';
+(b) pasted third-party text -> a belief ABOUT that party, or skip; (c) pasted
+AI-drafted text -> not the owner's position unless they explicitly endorse it
+in their own words; (d) the owner's answers to Q/A prompts are their own.
+When unsure, phrase the claim as what the owner DID ('pasted/considered X')
+rather than what they BELIEVE.
 
 CLI:
     python ingest.py pending <export.json> [--limit N]
@@ -52,11 +63,12 @@ def read_export(path: str) -> list[dict]:
     data = json.load(open(path))
     items = []
     for c in data:
-        humans = [
-            {"at": (m.get("created_at") or "")[:10], "text": m.get("text") or ""}
-            for m in c.get("chat_messages", [])
-            if m.get("sender") == "human" and m.get("text")
+        messages = [
+            {"role": m.get("sender") or "?", "at": (m.get("created_at") or "")[:10],
+             "text": m.get("text") or ""}
+            for m in c.get("chat_messages", []) if m.get("text")
         ]
+        humans = [{"at": m["at"], "text": m["text"]} for m in messages if m["role"] == "human"]
         if not humans:
             continue
         items.append({
@@ -65,10 +77,51 @@ def read_export(path: str) -> list[dict]:
             "name": c.get("name") or "(untitled)",
             "created_at": (c.get("created_at") or "")[:10],
             "updated_at": (c.get("updated_at") or "")[:10],
+            "messages": messages,
             "human_messages": humans,
         })
     items.sort(key=lambda i: i["updated_at"], reverse=True)
     return items
+
+
+def full_transcript(item: dict) -> dict:
+    """The complete conversation, both roles — what gets snapshotted."""
+    return {
+        "uuid": item["uuid"], "name": item["name"],
+        "created_at": item["created_at"], "updated_at": item["updated_at"],
+        "messages": item["messages"],
+    }
+
+
+def resnapshot(path: str, actor: str = "owner") -> dict:
+    """Preservation repair: earlier staging snapshotted only human-sender
+    messages. Register the FULL transcript as additional evidence for every
+    conversation that lacks one (same URI; metadata.supersedes points at the
+    partial snapshot). Nothing is modified or removed; the cursor is unchanged."""
+    log = engine.get_log()
+    state = log.state()
+    have_full = {e["uri"] for e in state["evidence"].values()
+                 if (e.get("metadata") or {}).get("transcript") == "full"}
+    partial_by_uri = {e["uri"]: e["evidence_id"] for e in state["evidence"].values()
+                      if (e.get("metadata") or {}).get("role") == "stream-item"
+                      and (e.get("metadata") or {}).get("transcript") != "full"}
+    added = 0
+    for item in read_export(path):
+        if item["uri"] in have_full or item["uri"] not in partial_by_uri:
+            continue
+        log.register_evidence(
+            media_type="application/json",
+            uri=item["uri"],
+            content=canonical_json(full_transcript(item)),
+            metadata={"role": "stream-item", "source": SOURCE, "transcript": "full",
+                      "name": item["name"], "updated_at": item["updated_at"],
+                      "conversation_uuid": item["uuid"],
+                      "supersedes": partial_by_uri[item["uri"]],
+                      "note": "full-transcript re-snapshot; earlier evidence held human messages only"},
+            actor=actor,
+        )
+        added += 1
+    return engine._after_write({"full_transcripts_added": added})
 
 
 def ingested_uris() -> set[str]:
@@ -87,17 +140,14 @@ def stage(path: str, limit: int = 10, actor: str = "owner") -> list[dict]:
     log = engine.get_log()
     staged = []
     for item in pending(path, limit):
-        content = canonical_json({
-            "uuid": item["uuid"], "name": item["name"],
-            "created_at": item["created_at"], "updated_at": item["updated_at"],
-            "human_messages": item["human_messages"],
-        })
+        content = canonical_json(full_transcript(item))
         evidence_id = log.register_evidence(
             media_type="application/json",
             uri=item["uri"],
             content=content,
-            metadata={"role": "stream-item", "source": SOURCE,
-                      "name": item["name"], "updated_at": item["updated_at"]},
+            metadata={"role": "stream-item", "source": SOURCE, "transcript": "full",
+                      "name": item["name"], "updated_at": item["updated_at"],
+                      "conversation_uuid": item["uuid"]},
             actor=actor,
         )
         text = "\n".join(f"[{m['at']}] {m['text']}" for m in item["human_messages"])
@@ -162,6 +212,8 @@ def main() -> int:
     a = sub.add_parser("apply")
     a.add_argument("file")
     a.add_argument("--extractor", required=True)
+    r = sub.add_parser("resnapshot")
+    r.add_argument("export")
     args = p.parse_args()
 
     if args.cmd == "pending":
@@ -180,6 +232,8 @@ def main() -> int:
     elif args.cmd == "apply":
         out = apply(json.load(open(args.file)), extractor=args.extractor)
         print(json.dumps(out, indent=2))
+    elif args.cmd == "resnapshot":
+        print(json.dumps(resnapshot(args.export), indent=2))
     return 0
 
 

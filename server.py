@@ -172,8 +172,12 @@ def memory_ingest_pass(source_path: str, limit: int = 5) -> dict:
     off. YOU are the extractor for staged items: read each excerpt and propose atomic,
     durable, personally relevant natural-language beliefs (one fact per belief; owner
     statements are method 'asserted'; skip pleasantries, transient tasks, and what the
-    repo already records — an item may legitimately yield zero beliefs). Then submit via
-    memory_ingest_apply with each proposal's evidence_id."""
+    repo already records — an item may legitimately yield zero beliefs). ATTRIBUTION: a
+    human-sender message is not automatically the owner's own words — pasted AI output,
+    others' emails, articles, and drafts appear inside human turns; attribute a claim to
+    the owner only when the words are theirs, otherwise describe what they did ('pasted
+    X', 'considered Y') or skip. Then submit via memory_ingest_apply with each proposal's
+    evidence_id."""
     staged = ingest.stage(source_path, limit)
     return {
         "staged": staged,

@@ -30,33 +30,105 @@ PAGE = HERE / "review.html"
 EXCERPT_CHARS = 900
 
 
-def _evidence_excerpt(log, e: dict) -> str:
+import re
+
+_EMAIL_RE = re.compile(r"^On .{5,80} wrote:|^From: |^Subject: ", re.M)
+_HEADING_RE = re.compile(r"^#{1,4} |^\*\*[^*]{3,80}\*\*$|^-{3,}$", re.M)
+
+
+def pasted_flags(text: str) -> list[str]:
+    """Heuristic attribution signals for a human-sender message. Advisory
+    only — the owner adjudicates. Long, formatted, or quoted blocks are
+    frequently pasted AI output, emails, or articles rather than the owner's
+    own words."""
+    flags = []
+    if _EMAIL_RE.search(text):
+        flags.append("quoted email")
+    if _HEADING_RE.search(text):
+        flags.append("formatted document")
+    if text.startswith("http"):
+        flags.append("link share")
+    if re.search(r"(^|\n)\s*1\. .+\n\s*2\. ", text) and len(text) > 600:
+        flags.append("structured list — possibly pasted")
+    if len(text) > 900 and not any(f in flags for f in ("quoted email", "structured list — possibly pasted")):
+        flags.append("long block — possibly pasted")
+    if re.search(r"^Q: .+\nA: ", text, re.M):
+        flags.append("Q/A answers (owner's)")
+    return flags
+
+
+def _decode(log, e: dict):
     if not e.get("digest"):
-        return f"(referenced, no snapshot) {e.get('uri') or ''}"
+        return None
     raw = log.store.get(e["digest"])
     if raw is None:
-        return "(content not available)"
+        return None
     text = raw.decode("utf-8", "replace")
     try:
-        obj = json.loads(text)
-        if isinstance(obj, dict) and "human_messages" in obj:
-            text = "\n".join(f"[{m.get('at','')}] {m.get('text','')}" for m in obj["human_messages"])
+        return json.loads(text)
     except ValueError:
-        pass
+        return text
+
+
+def transcript_of(log, e: dict) -> list[dict] | None:
+    """Messages with roles for a conversation snapshot, or None for other media."""
+    obj = _decode(log, e)
+    if not isinstance(obj, dict):
+        return None
+    if "messages" in obj:
+        msgs = obj["messages"]
+    elif "human_messages" in obj:
+        msgs = [dict(m, role="human") for m in obj["human_messages"]]
+    else:
+        return None
+    return [{"role": m.get("role", "?"), "at": m.get("at", ""), "text": m.get("text", ""),
+             "flags": pasted_flags(m.get("text", "")) if m.get("role") == "human" else []}
+            for m in msgs]
+
+
+def _evidence_excerpt(log, e: dict) -> str:
+    obj = _decode(log, e)
+    if obj is None:
+        return f"(no snapshot) {e.get('uri') or ''}"
+    if isinstance(obj, dict) and ("messages" in obj or "human_messages" in obj):
+        msgs = obj.get("messages") or [dict(m, role="human") for m in obj["human_messages"]]
+        text = "\n".join(f"[{m.get('at','')}] {m.get('text','')}" for m in msgs if m.get("role") == "human")
+    else:
+        text = obj if isinstance(obj, str) else json.dumps(obj, ensure_ascii=False)
     return text[:EXCERPT_CHARS] + ("…" if len(text) > EXCERPT_CHARS else "")
 
 
 def belief_payload(v: dict, by_id: dict, state: dict, log) -> dict:
     s = engine.stamped(v, by_id=by_id)
+    full_by_uri = {}
+    for e in state["evidence"].values():
+        if (e.get("metadata") or {}).get("transcript") == "full" and e.get("uri"):
+            full_by_uri[e["uri"]] = e
     ev = []
+    attribution_warning = False
     for eid in v["evidence_ids"]:
         e = state["evidence"].get(eid)
-        if e:
-            ev.append({
-                "id": eid, "name": (e.get("metadata") or {}).get("name") or e.get("uri") or eid,
-                "uri": e.get("uri"), "role": (e.get("metadata") or {}).get("role"),
-                "excerpt": _evidence_excerpt(log, e),
-            })
+        if not e:
+            continue
+        full = full_by_uri.get(e.get("uri")) or e
+        meta = full.get("metadata") or {}
+        transcript = transcript_of(log, full)
+        n_msgs = len(transcript) if transcript else 0
+        human_chars = sum(len(m["text"]) for m in (transcript or []) if m["role"] == "human") or 1
+        pasted_chars = sum(len(m["text"]) for m in (transcript or [])
+                           if m["role"] == "human" and any(f != "Q/A answers (owner's)" for f in m["flags"]))
+        if pasted_chars / human_chars > 0.6:
+            attribution_warning = True
+        ev.append({
+            "id": eid, "full_id": full["evidence_id"],
+            "name": meta.get("name") or e.get("uri") or eid,
+            "uri": e.get("uri"), "role": meta.get("role"),
+            "conversation_uuid": meta.get("conversation_uuid")
+                or (e.get("uri") or "").rsplit("/", 1)[-1],
+            "recorded_at": e.get("recorded_at", "")[:10],
+            "messages": n_msgs, "full_transcript": transcript is not None and "messages" in json.dumps(_decode(log, full) or {})[:200],
+            "excerpt": _evidence_excerpt(log, full),
+        })
     rels = [r for r in state["relationships"] if v["id"] in (r["subject_id"], r["object_id"])]
     raw = state["beliefs"][v["id"]]
     return {
@@ -71,6 +143,7 @@ def belief_payload(v: dict, by_id: dict, state: dict, log) -> dict:
                            "note": r.get("note", "")} for r in rels],
         "extractor": (raw.get("metadata") or {}).get("extractor"),
         "note": (raw.get("metadata") or {}).get("note"),
+        "attribution_warning": attribution_warning,
     }
 
 
@@ -130,6 +203,16 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(body)
         elif self.path == "/api/beliefs":
             self._json(200, {"beliefs": all_beliefs(), "health": engine.health()})
+        elif self.path.startswith("/api/evidence/"):
+            eid = self.path.rsplit("/", 1)[-1]
+            log = engine.get_log()
+            e = log.state()["evidence"].get(eid)
+            if not e:
+                return self._json(404, {"error": "no such evidence"})
+            t = transcript_of(log, e)
+            raw = None if t is not None else (_decode(log, e) if e.get("digest") else None)
+            self._json(200, {"evidence": {k: e.get(k) for k in ("evidence_id", "uri", "digest", "media_type", "durability", "metadata")},
+                             "transcript": t, "raw": raw if isinstance(raw, str) else (json.dumps(raw, ensure_ascii=False, indent=1) if raw else None)})
         else:
             self._json(404, {"error": "not found"})
 

@@ -126,6 +126,10 @@ beliefs:
   observed_at: '2024-08-08'
   contested: false
   unsupported: false
+  retired: true
+  retired_reason: retired by owner (review UI 2026-09-09)
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+  - at: '2026-09-10'
+    op: BeliefRetired

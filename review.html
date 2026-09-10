@@ -44,6 +44,14 @@
   .toast.show { opacity:1 }
   .empty { color:var(--muted); padding:40px }
   .reason { color:var(--suspect); font-size:13px; margin:-8px 0 12px }
+  .warn { background:#fff4e5; border:1px solid #f0c48a; color:#7a4a00; padding:8px 12px; border-radius:6px; font-size:13px; margin:0 0 12px }
+  .msg { border-left:3px solid var(--line); padding:6px 10px; margin:6px 0; font-size:13px; white-space:pre-wrap }
+  .msg.human { border-left-color:var(--accent); background:#f3f7fb }
+  .msg.assistant { border-left-color:#c9c7bf; color:#4a4944; max-height:180px; overflow:auto }
+  .msg .who { font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted) }
+  .flag { display:inline-block; font-size:10px; padding:0 6px; border-radius:8px; background:#f0c48a; color:#5a3400; margin-left:6px }
+  .linkish { color:var(--accent); cursor:pointer; text-decoration:underline; font-size:12.5px }
+  .ref { font-size:11.5px; color:var(--muted); font-family: ui-monospace, Menlo, monospace }
 </style>
 </head>
 <body>
@@ -108,6 +116,7 @@ function renderDetail(){
       <br>observed ${b.observed_at||'?'} · verified ${b.verified_at||'never'} · ${b.age_days ?? '?'}d old${b.extractor?' · extracted by '+esc(b.extractor):''}
     </div>
     ${why}
+    ${b.attribution_warning?`<div class="warn">⚠ <b>Check attribution.</b> Most of the human-side text in the source is a long/formatted/quoted block — likely pasted AI output, an email, or an article rather than your own words. Confirm only if the claim is really yours; otherwise Rephrase to what you <i>did</i> ("pasted…", "considered…") or Retire.</div>`:''}
     <textarea id="text" placeholder="Rephrase the claim here (only used by Rephrase)">${esc(b.claim)}</textarea>
     <div style="margin-top:8px"><input type="text" id="note" placeholder="Optional note — becomes part of the canonical record"></div>
     <div class="actions">
@@ -119,13 +128,32 @@ function renderDetail(){
     </div>
     ${b.note?`<section><h3>Extractor note</h3>${esc(b.note)}</section>`:''}
     <section><h3>Evidence — why this is believed</h3>
-      ${b.evidence.length?b.evidence.map(e=>`<div class="ev"><div class="name">${esc(e.name)} <span class="tag">${esc(e.role||'')}</span></div><pre>${esc(e.excerpt)}</pre></div>`).join(''):'<div class="row">no evidence linked (unsupported)</div>'}
+      ${b.evidence.length?b.evidence.map(e=>`<div class="ev">
+          <div class="name">${esc(e.name)} <span class="tag">${esc(e.role||'')}</span> <span class="tag">${e.messages} messages</span></div>
+          <div class="ref">conversation ${esc(e.conversation_uuid)} · evidence ${esc(e.id)}${e.full_id!==e.id?' · full transcript '+esc(e.full_id):''} · ${esc(e.uri||'')}</div>
+          <pre>${esc(e.excerpt)}</pre>
+          <div style="margin-top:6px"><span class="linkish" data-ev="${esc(e.full_id)}">Show full conversation (both sides, with attribution flags)</span></div>
+          <div class="transcript" id="tr-${esc(e.full_id)}"></div>
+        </div>`).join(''):'<div class="row">no evidence linked (unsupported)</div>'}
       ${b.premise_ids.length?`<div class="row">premises: ${b.premise_ids.map(esc).join(', ')}</div>`:''}
     </section>
     ${b.claim_history.length>1?`<section><h3>Claim history</h3><ul class="hist">${b.claim_history.map(h=>`<li>${h.at} · ${h.origin}: ${esc(h.claim)}</li>`).join('')}</ul></section>`:''}
     ${b.relationships.length?`<section><h3>Relationships</h3><ul class="hist">${b.relationships.map(r=>`<li>${esc(r.subject)} <b>${r.rel}</b> ${esc(r.object)}${r.note?' — '+esc(r.note):''}</li>`).join('')}</ul></section>`:''}
     <section><h3>Canonical history</h3><ul class="hist">${b.history.map(h=>`<li>${h.at} · ${h.type}</li>`).join('')}</ul></section>`;
   document.querySelectorAll('.actions button').forEach(btn=>btn.onclick=()=>act(btn.dataset.a));
+  document.querySelectorAll('.linkish[data-ev]').forEach(a=>a.onclick=()=>showTranscript(a.dataset.ev, a));
+}
+async function showTranscript(eid, link){
+  const box = document.getElementById('tr-'+eid);
+  if (box.innerHTML) { box.innerHTML=''; link.textContent='Show full conversation (both sides, with attribution flags)'; return; }
+  const r = await fetch('/api/evidence/'+eid); const j = await r.json();
+  if (!r.ok) return toast('✗ '+j.error);
+  if (j.transcript) {
+    box.innerHTML = j.transcript.map(m=>`<div class="msg ${m.role}"><span class="who">${esc(m.role)} · ${esc(m.at)}</span>${(m.flags||[]).map(f=>`<span class="flag">${esc(f)}</span>`).join('')}\n${esc(m.text)}</div>`).join('');
+  } else {
+    box.innerHTML = `<pre>${esc(j.raw||'(no content)')}</pre>`;
+  }
+  link.textContent = 'Hide full conversation';
 }
 async function act(a){
   const b = beliefs.find(x=>x.id===selected); if(!b) return;
