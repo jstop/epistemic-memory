@@ -509,6 +509,31 @@ def ground(belief_id: str, *, evidence_content: str | None = None,
     return _after_write(stamped(v))
 
 
+def record_run(*, kind: str, interpreter: str, inputs: list[str] | None = None,
+               outputs: list[dict] | None = None, params: dict | None = None,
+               note: str = "", run_id: str | None = None,
+               started_at: str | None = None) -> str:
+    """Record an interpreter run (run identity). Returns the run id."""
+    return get_log().record_run(kind=kind, interpreter=interpreter, inputs=inputs,
+                                outputs=outputs, params=params, note=note,
+                                run_id=run_id, started_at=started_at)
+
+
+def runs(kind: str | None = None, interpreter: str | None = None) -> list[dict]:
+    """Recorded runs, oldest first, optionally filtered."""
+    out = list(get_log().state()["runs"].values())
+    if kind:
+        out = [r for r in out if r.get("kind") == kind]
+    if interpreter:
+        out = [r for r in out if (r.get("interpreter") or "").startswith(interpreter)]
+    return out
+
+
+def new_run_id() -> str:
+    from substrate import new_id
+    return new_id("run")
+
+
 def set_anchor(belief_id: str, anchor: str | None, anchor_cost: str | None = None,
                note: str = "") -> dict:
     """Set or replace a belief's re-check command."""

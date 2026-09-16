@@ -172,3 +172,20 @@ class LateGroundingTest(GroundingTest):
         self.assertEqual(len(b["evidence_ids"]), 1)
         self.assertTrue(b["evidence_ids"][0].startswith("evd"))
         self.assertEqual(log.state()["evidence"][b["evidence_ids"][0]]["uri"], "epist-workspace://sky@1")
+
+
+class RunIdentityTest(GroundingTest):
+    def test_record_run_requires_known_inputs_and_identity(self):
+        log = engine.get_log()
+        with self.assertRaises(ValueError):
+            log.record_run(kind="x", interpreter="")
+        with self.assertRaises(ValueError):
+            log.record_run(kind="x", interpreter="a@1", inputs=["evd_ghost"])
+        eid = log.register_evidence(media_type="text/plain", content="doc")
+        rid = engine.record_run(kind="extract", interpreter="epist-ingest@claude-opus-4-6",
+                                inputs=[eid], outputs=[{"type": "proposal", "id": "prop-1"}],
+                                params={"model": "claude-opus-4-6"})
+        runs = engine.runs(kind="extract")
+        self.assertEqual([r["run_id"] for r in runs], [rid])
+        self.assertEqual(runs[0]["inputs"], [eid])
+        self.assertEqual(runs[0]["actor"], "test:fixture")

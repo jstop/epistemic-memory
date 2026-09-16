@@ -175,6 +175,22 @@ class IngestTest(unittest.TestCase):
         self.assertEqual(len(out["errors"]), 1)
         self.assertEqual(out["captured"], ["chat-new-fact"])
 
+    def test_apply_records_a_run_with_identity(self):
+        eid, out = self._stage_and_apply()
+        self.assertTrue(out["run_id"].startswith("run_"))
+        run = engine.get_log().state()["runs"][out["run_id"]]
+        self.assertEqual(run["kind"], "ingest-apply")
+        self.assertEqual(run["inputs"], [eid])
+        self.assertEqual(sorted(o["id"] for o in run["outputs"]),
+                         ["chat-dao-enzyme", "chat-low-histamine"])
+        v, _ = engine.find("chat-dao-enzyme")
+        b = engine.get_log().state()["beliefs"]["chat-dao-enzyme"]
+        self.assertEqual(b["metadata"]["run_id"], out["run_id"])
+        # an empty pass is still history
+        out2 = ingest.apply([], extractor="test-extractor")
+        self.assertEqual(engine.get_log().state()["runs"][out2["run_id"]]["outputs"], [])
+        self.assertTrue(engine.get_log().verify_chain())
+
     def test_extractor_recorded_in_provenance(self):
         self._stage_and_apply()
         v, _ = engine.find("chat-low-histamine")

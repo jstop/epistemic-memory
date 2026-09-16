@@ -168,10 +168,11 @@ beliefs:
     op: BeliefFormed
     actor: migration:yaml-import
 - id: epist-workbench-web-ui
-  claim: The epistemic workbench has a React/FastAPI web UI (web/server.py + web/frontend) launched with
+  claim: 'The epistemic workbench has a React/FastAPI web UI (web/server.py + web/frontend) launched with
     `make web` from ~/workspace/epistemic/workbench, served at http://127.0.0.1:8111 with ?ws=<name>&tab=<graph|summary|...>
-    deep links; on 2026-09-15 it was brought up to date with the F1-F5 features (typed edges, provenance,
-    derived confidence, supersede lifecycle, ingestion) that previously existed only in the MCP server
+    deep links; as of 2026-09-16 it is an interpreter over the living library (the substrate): beliefs
+    ground in workspaces via snapshot evidence and a verify-thesis anchor, every generate/extract/curate
+    run is recorded with run identity, and the recall client is removed'
   method: observed
   volatility: structural
   cluster: Epistemic tooling layout
@@ -185,9 +186,24 @@ beliefs:
   - epist-location
   - epist-workbench-branch
   - epist-workbench-identity
+  claim_history:
+  - at: '2026-09-16'
+    claim: The epistemic workbench has a React/FastAPI web UI (web/server.py + web/frontend) launched
+      with `make web` from ~/workspace/epistemic/workbench, served at http://127.0.0.1:8111 with ?ws=<name>&tab=<graph|summary|...>
+      deep links; on 2026-09-15 it was brought up to date with the F1-F5 features (typed edges, provenance,
+      derived confidence, supersede lifecycle, ingestion) that previously existed only in the MCP server
+  - at: '2026-09-16'
+    claim: 'The epistemic workbench has a React/FastAPI web UI (web/server.py + web/frontend) launched
+      with `make web` from ~/workspace/epistemic/workbench, served at http://127.0.0.1:8111 with ?ws=<name>&tab=<graph|summary|...>
+      deep links; as of 2026-09-16 it is an interpreter over the living library (the substrate): beliefs
+      ground in workspaces via snapshot evidence and a verify-thesis anchor, every generate/extract/curate
+      run is recorded with run identity, and the recall client is removed'
   events:
   - at: '2026-09-16'
     op: BeliefFormed
+    actor: agent:unknown
+  - at: '2026-09-16'
+    op: BeliefRestated
     actor: agent:unknown
 - id: epist-workspaces-count
   claim: There are 40 live research workspaces under ~/workspace/epistemic/workspaces/

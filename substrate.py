@@ -41,6 +41,7 @@ EVENT_TYPES = (
     "BeliefRestated",
     "GroundingAdded",
     "AnchorSet",
+    "RunRecorded",
     "VerificationRecorded",
     "ContradictionRecorded",
     "ContradictionResolved",
@@ -390,6 +391,35 @@ class CanonicalLog:
             "anchor_cost": anchor_cost, "note": note,
         })
 
+    def record_run(self, *, kind: str, interpreter: str,
+                   inputs: list[str] | None = None,
+                   outputs: list[dict] | None = None,
+                   params: dict | None = None, note: str = "",
+                   run_id: str | None = None,
+                   started_at: str | None = None) -> str:
+        """Record that an interpreter ran: which one (name@version), over which
+        canonical inputs (evidence ids), producing which derived objects
+        (interpretations, beliefs, proposals, snapshots — as {type, id, ...}).
+        This is run identity: every derived object can name the run that made
+        it, so a later, better interpreter can be diffed against it instead of
+        silently replacing it. The run itself is history; what it produced is
+        understanding."""
+        if not kind.strip() or not interpreter.strip():
+            raise ValueError("a run needs a kind and an interpreter (name@version)")
+        state = self.state()
+        inputs = list(inputs or [])
+        for eid in inputs:
+            if eid not in state["evidence"]:
+                raise ValueError(f"unknown input evidence: {eid}")
+        rid = run_id or new_id("run")
+        self._append("RunRecorded", {"run": {
+            "run_id": rid, "kind": kind, "interpreter": interpreter,
+            "inputs": inputs, "outputs": list(outputs or []),
+            "params": params or {}, "note": note,
+            "started_at": started_at, "finished_at": now_iso(),
+        }})
+        return rid
+
     def record_interpretation(self, *, kind: str, statement: str,
                               grounding: list[dict], interpreter: str,
                               subjects: list[str] | None = None,
@@ -570,6 +600,7 @@ class CanonicalLog:
         relationships: list[dict] = []
         reconciled_pairs: list[list[str]] = []
         interpretations: dict[str, dict] = {}
+        runs: dict[str, dict] = {}
         events = self.events()
         corrections = [dict(ev["payload"], sequence=ev["sequence"],
                             recorded_at=ev["recorded_at"], actor=ev["actor"])
@@ -622,6 +653,8 @@ class CanonicalLog:
                 b = beliefs[p["belief_id"]]
                 b["anchor"] = p.get("anchor")
                 b["anchor_cost"] = p.get("anchor_cost")
+            elif t == "RunRecorded":
+                runs[p["run"]["run_id"]] = dict(p["run"], recorded_at=at, actor=who)
             elif t == "InterpretationRecorded":
                 i = dict(p["interpretation"], recorded_at=at, superseded_by=None)
                 interpretations[i["interpretation_id"]] = i
@@ -660,7 +693,7 @@ class CanonicalLog:
                             "judge": run["judge"], "recorded_at": at,
                         })
             if t not in ("EvidenceRegistered", "RelationshipRecorded", "ReconciliationRun",
-                         "InterpretationRecorded", "AttributionCorrected"):
+                         "InterpretationRecorded", "AttributionCorrected", "RunRecorded"):
                 bid = p.get("belief_id") or p.get("belief", {}).get("belief_id")
                 if bid and bid in beliefs:
                     beliefs[bid]["history"].append(
@@ -668,7 +701,7 @@ class CanonicalLog:
                          "actor": who, "payload": p})
         return {"beliefs": beliefs, "evidence": evidence,
                 "relationships": relationships, "reconciled_pairs": reconciled_pairs,
-                "interpretations": interpretations,
+                "interpretations": interpretations, "runs": runs,
                 "attribution_corrections": corrections}
 
     def why(self, belief_id: str, _seen: set[str] | None = None) -> dict:

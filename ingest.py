@@ -178,6 +178,9 @@ def apply(proposals: list[dict], extractor: str) -> dict:
     log = engine.get_log()
     state = log.state()
     captured, skipped, errors = [], [], []
+    run_id = engine.new_run_id()
+    started = engine.dt.datetime.now(engine.dt.timezone.utc).isoformat()
+    input_evidence = []
     for p in proposals:
         try:
             for key in ("evidence_id", "belief_id", "claim", "volatility", "cluster"):
@@ -199,14 +202,25 @@ def apply(proposals: list[dict], extractor: str) -> dict:
                 evidence_ids=[p["evidence_id"]],
                 observed_at=p.get("observed_at"),
                 metadata={"extractor": extractor, "source": SOURCE,
-                          "note": p.get("note", "")},
+                          "note": p.get("note", ""), "run_id": run_id},
                 grounding=grounding,
             )
             state = log.state()
             captured.append(p["belief_id"])
+            if p["evidence_id"] not in input_evidence:
+                input_evidence.append(p["evidence_id"])
         except ValueError as e:
             errors.append(str(e))
+    # Run identity: which extractor, over which staged evidence, produced
+    # which beliefs. Recorded even when nothing was captured, so a pass that
+    # found nothing is itself history.
+    log.record_run(kind="ingest-apply", interpreter=extractor, inputs=input_evidence,
+                   outputs=[{"type": "belief", "id": bid} for bid in captured],
+                   params={"proposals": len(proposals), "skipped_existing": len(skipped),
+                           "errors": len(errors)},
+                   run_id=run_id, started_at=started)
     result = {"captured": captured, "skipped_existing": skipped, "errors": errors,
+              "run_id": run_id,
               "next_step": "run a reconciliation pass to relate new beliefs to history"}
     return engine._after_write(result)
 
