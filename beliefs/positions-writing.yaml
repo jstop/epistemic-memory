@@ -24,8 +24,10 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner
 - id: chat-aspirational-vs-real
   claim: Much of Josh's Osmio work is aspirational thought-exploration, not shipped reality — he explicitly
     corrects AIs that treat explored concepts (Roundspace, epistemology.info plans, formalized roles)
@@ -39,6 +41,7 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
 - id: chat-covenant-protocol
   claim: Josh drafted 'The Covenant Protocol' (Mar 2026) with AI assistance — six Ostrom/Axelrod-derived
     design patterns for accountable identity infrastructure, naming the 'accountability gap' — and had
@@ -61,8 +64,10 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner
 - id: chat-epistemic-traceability-position
   claim: Josh drafted a LinkedIn post (Jul 2026) stating that epistemic traceability is the necessary
     future of aligned AI and context engineering is a question of epistemic imports, and that he built
@@ -87,8 +92,10 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner
 - id: chat-epistemology-info
   claim: 'Josh owns epistemology.info — his vision for a participatory collective sense-making system
     (''optimocracy'', ''the ballot system of the future'': not governance, freedom of thought enabling
@@ -102,6 +109,7 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
 - id: chat-homepage-hello-world
   claim: 'Josh drafted a ''Hello, World / first-class citizen'' homepage intro for joshautomates.com (Jun
     2026: people have been second-class online and should be first-class under their own authority, Osmio
@@ -126,8 +134,10 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner
 - id: chat-mind-simulation-position
   claim: Josh is developing a philosophical position connecting mind-as-simulation, shared moral agency,
     and his epistemic-network work
@@ -140,6 +150,7 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
 - id: chat-screenpipe-project
   claim: Josh ran Screenpipe continuous screen-capture + OCR on his machine (~2024-2025) and built summarization,
     vector-db (Chroma), and knowledge-graph (Graphiti/Neo4j) pipelines over it — the original 'AI that
@@ -153,6 +164,7 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
 - id: chat-thesis-accessibility-work
   claim: Josh is reworking his accountable-identity thesis into a piece accessible to a general audience
   method: asserted
@@ -166,6 +178,7 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
 - id: chat-unsent-drafts-pattern
   claim: 'Josh''s self-identified pattern: he produces drafts upon drafts of outreach, announcements,
     and essays to people he respects but historically doesn''t send or post them — ''give me something
@@ -180,3 +193,4 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner

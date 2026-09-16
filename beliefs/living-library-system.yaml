@@ -4,7 +4,10 @@
 generated: true
 beliefs:
 - id: library-design-doc
-  claim: The living library design lineage is in ~/.claude/plans/i-don-t-think-we-re-recursive-blossom.md
+  claim: 'The Episteme design lineage / pipeline plan is ~/.claude/plans/robust-dazzling-avalanche.md
+    (the previously recorded path i-don-t-think-we-re-recursive-blossom.md does not exist); the layer
+    model it shares with the memory README is: provenance substrate → personal memory projection → interpretation
+    compiler → epistemic graph → inquiry engine → attention allocation → agency/authorization'
   method: observed
   volatility: structural
   cluster: Living library system
@@ -16,9 +19,21 @@ beliefs:
   links:
   - library-home
   reconstructed: true
+  claim_history:
+  - at: '2026-09-10'
+    claim: The living library design lineage is in ~/.claude/plans/i-don-t-think-we-re-recursive-blossom.md
+  - at: '2026-09-16'
+    claim: 'The Episteme design lineage / pipeline plan is ~/.claude/plans/robust-dazzling-avalanche.md
+      (the previously recorded path i-don-t-think-we-re-recursive-blossom.md does not exist); the layer
+      model it shares with the memory README is: provenance substrate → personal memory projection → interpretation
+      compiler → epistemic graph → inquiry engine → attention allocation → agency/authorization'
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: migration:yaml-import
+  - at: '2026-09-16'
+    op: BeliefRestated
+    actor: agent:unknown
 - id: library-home
   claim: The canonical belief store and MCP server live at ~/workspace/epistemic/memory (local git repo)
   method: observed
@@ -33,6 +48,7 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: migration:yaml-import
 - id: library-surfaces
   claim: Only Claude Code is wired to the living library; Claude Desktop runs the epistemic-workbench
     MCP server but not the living library, and claude.ai / ChatGPT remote connectors are not yet built
@@ -57,7 +73,10 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: migration:yaml-import
   - at: '2026-09-10'
     op: VerificationRecorded
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner

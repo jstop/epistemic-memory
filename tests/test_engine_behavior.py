@@ -6,6 +6,8 @@ regenerable and never feed back, capture never blocks on projection failure.
 import os
 import sys
 import unittest
+import subprocess
+from unittest.mock import patch
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -13,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import engine  # noqa: E402
 
-ENV_KEYS = ("EPISTEMIC_DB_PATH", "EPISTEMIC_CONTENT_DIR", "EPISTEMIC_BELIEFS_DIR",
+ENV_KEYS = ("EPISTEMIC_ACTOR", "EPISTEMIC_DB_PATH", "EPISTEMIC_CONTENT_DIR", "EPISTEMIC_BELIEFS_DIR",
             "EPISTEMIC_EVENTS_JSONL", "EPISTEMIC_INDEX_PATH")
 
 
@@ -23,6 +25,7 @@ class EngineBehaviorTest(unittest.TestCase):
         root = Path(self.tmp.name)
         self._saved = {k: os.environ.get(k) for k in ENV_KEYS}
         os.environ["EPISTEMIC_DB_PATH"] = str(root / "canonical.db")
+        os.environ["EPISTEMIC_ACTOR"] = "test:fixture"
         os.environ["EPISTEMIC_CONTENT_DIR"] = str(root / "evidence_store")
         os.environ["EPISTEMIC_BELIEFS_DIR"] = str(root / "beliefs")
         os.environ["EPISTEMIC_EVENTS_JSONL"] = str(root / "events.jsonl")
@@ -74,6 +77,72 @@ class EngineBehaviorTest(unittest.TestCase):
         why = engine.why("b-1")
         self.assertTrue(why["evidence"][0]["content_available"])
         self.assertFalse(why["unsupported"])
+
+    def test_unsupported_beliefs_never_instruct_silent_reliance(self):
+        for method in ("observed", "asserted", "derived", "inferred"):
+            with self.subTest(method=method):
+                out = self._capture(id=method, method=method, volatility="historical")
+                self.assertTrue(out["unsupported"])
+                self.assertNotEqual(out["stance"], "RELY")
+                self.assertNotEqual(out["guidance"], "use silently")
+                self.assertEqual(engine.stamped(engine.find(method)[0])["stance"], out["stance"])
+
+    def test_failed_command_cannot_be_recorded_as_verified(self):
+        self._capture(evidence_content="x", belief_extra={"anchor": "printf 'failure'; exit 7"})
+        observed = engine.run_anchor("b-1")
+        self.assertEqual(observed["execution"]["returncode"], 7)
+        out = engine.record_verification("b-1", "verified", note="caller judgment")
+        self.assertEqual(out["stance"], "SUSPECT")
+        self.assertTrue(out["verification_failed"])
+        self.assertFalse(out["contested"])
+        self.assertIsNone(out["verified_at"])
+        verification = engine.why("b-1")["verifications"][-1]
+        self.assertEqual(verification["verdict"], "failed")
+        self.assertEqual(verification["requested_verdict"], "verified")
+        self.assertEqual(verification["execution"]["returncode"], 7)
+        self.assertEqual(verification["note"], "caller judgment")
+        log = engine.get_log()
+        self.assertEqual(log.evidence_content(verification["evidence"]["evidence_id"]), b"failure")
+        replay = log.replay_into(Path(self.tmp.name) / "replayed.db")
+        try:
+            self.assertEqual(replay.state(), log.state())
+        finally:
+            replay.close()
+
+    def test_failed_execution_does_not_erase_existing_contradiction(self):
+        self._capture(evidence_content="x", belief_extra={"anchor": "exit 1"})
+        engine.get_log().record_contradiction("b-1", "b-1", note="counterevidence")
+        self.assertEqual(engine.record_verification("b-1", "verified")["stance"], "CONTESTED")
+
+    def test_timeout_preserves_partial_output_and_blocks_reliance(self):
+        self._capture(evidence_content="x", belief_extra={"anchor": "check"})
+        error = subprocess.TimeoutExpired("check", 120, output=b"partial", stderr=b" error")
+        with patch.object(engine.subprocess, "run", side_effect=error):
+            out = engine.record_verification("b-1", "verified")
+        self.assertEqual(out["stance"], "SUSPECT")
+        verification = engine.why("b-1")["verifications"][-1]
+        self.assertTrue(verification["execution"]["timed_out"])
+        self.assertEqual(engine.get_log().evidence_content(verification["evidence"]["evidence_id"]),
+                         b"partial error")
+
+    def test_successful_recheck_restores_reliance(self):
+        self._capture(evidence_content="x", belief_extra={"anchor": "check"})
+        with patch.object(engine.subprocess, "run", return_value=subprocess.CompletedProcess("check", 1, "bad", "")):
+            engine.record_verification("b-1", "verified")
+        with patch.object(engine.subprocess, "run", return_value=subprocess.CompletedProcess("check", 0, "ok", "")):
+            out = engine.record_verification("b-1", "verified")
+        self.assertEqual(out["stance"], "RELY")
+        self.assertFalse(out["verification_failed"])
+        self.assertIsNotNone(out["verified_at"])
+
+    def test_invalid_verdict_does_not_run_anchor_or_append_events(self):
+        self._capture(evidence_content="x", belief_extra={"anchor": "check"})
+        before = engine.get_log().events()
+        with patch.object(engine.subprocess, "run") as run:
+            with self.assertRaises(ValueError):
+                engine.record_verification("b-1", "typo")
+            run.assert_not_called()
+        self.assertEqual(engine.get_log().events(), before)
 
     # -- verify ----------------------------------------------------------------
 

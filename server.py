@@ -5,6 +5,13 @@ Every AI surface (Claude Code, Claude Desktop, and later claude.ai / ChatGPT via
 remote endpoint) reads and writes beliefs ONLY through these tools. Tier-1
 enforcement lives here, not in any client:
 
+  - identity → everything written through this door is attributed to the AGENT
+    that came through it (`agent:<EPISTEMIC_AGENT>`, default `agent:unknown`),
+    never to the owner. No tool takes an actor argument: who is writing is a
+    property of the channel, not the payload. The owner speaks only from an
+    interactive terminal (engine CLI, review UI). A belief an agent captures is
+    a draft in the owner's record until the owner stands behind it.
+
   - recall  → beliefs always arrive wearing their stance (never naked)
   - capture → rejects any belief missing the envelope (method is non-negotiable)
   - verify  → runs a belief's anchor; a failed check records a contradiction
@@ -16,12 +23,16 @@ Run: python server.py   (stdio transport)
 from __future__ import annotations
 
 import datetime as dt
+import os
 
 from mcp.server.fastmcp import FastMCP
 
 import engine
 import ingest
 import reconciler
+
+# This process IS the agent channel. Declared once, before any log is opened.
+engine.CHANNEL_ACTOR = engine.agent_actor(os.environ.get("EPISTEMIC_AGENT"))
 
 mcp = FastMCP("epistemic-memory")
 
@@ -74,7 +85,11 @@ def memory_capture(
     snapshotted content-addressed) and/or `evidence_uri`; for derived/inferred pass
     `premises` (existing belief ids). Ungrounded beliefs are still captured but arrive
     explicitly marked unsupported — capture never blocks, grounding is never fabricated.
-    Fails if the id already exists — use memory_reconcile to change an existing belief."""
+    Fails if the id already exists — use memory_reconcile to change an existing belief.
+    AUTHORSHIP: this capture is recorded under YOUR agent identity, not the owner's. Even
+    a claim in the owner's words ("I prefer X") is your composition of it until the owner
+    stands behind it from their own channel; never describe such a belief as something
+    the owner said."""
     belief = {
         "id": id, "claim": claim, "method": method, "volatility": volatility,
         "cluster": cluster, "kind": kind,
@@ -92,11 +107,13 @@ def memory_capture(
 @mcp.tool()
 def memory_verify(id: str, result: str = "", note: str = "") -> dict:
     """Run a belief's anchor command and report what reality says vs. the claim.
-    Call first with no `result` to observe; then call again with result='verified' or
-    result='contradicted' to record the judgment (a failed check IS a contradiction —
-    it flips the belief to CONTESTED and blocks reliance until reconciled). When the
-    judgment is recorded, the anchor is re-run and its actual output is snapshotted as
-    evidence linked to the verification — reality's answer is preserved, not discarded."""
+    Call first with no `result` to observe output and execution status; then call
+    again with result='verified' or result='contradicted' to record the judgment.
+    Recording re-runs the anchor and snapshots its output. A nonzero exit or timeout
+    records a failed verification instead of applying the judgment: it blocks
+    reliance without asserting the claim is false. A successful command still
+    requires the caller to judge whether its output supports the claim.
+    """
     if result:
         return {"recorded": engine.record_verification(id, result, note)}
     return engine.run_anchor(id)

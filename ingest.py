@@ -7,7 +7,7 @@ The design generalizes: an item is anything with a stable URI and content.
 The flow keeps the library's division of labor:
   - STAGE (mechanical, here): find stream items not yet in canonical history,
     snapshot each as content-addressed evidence. Registering the evidence IS
-    the ingestion cursor — an item is 'ingested' iff its URI has evidence, so
+    the ingestion cursor — a version is ingested iff its URI and digest exist, so
     incrementality is derived from canonical history itself, needs no state
     file, and survives replay. Preservation-first: the snapshot is kept even
     if extraction later finds nothing worth believing in it.
@@ -54,7 +54,7 @@ import json
 import sys
 
 import engine
-from substrate import canonical_json
+from substrate import canonical_json, sha256_hex
 
 SOURCE = "claude-export"
 STAGE_EXCERPT_CHARS = 3500
@@ -99,7 +99,7 @@ def full_transcript(item: dict) -> dict:
     }
 
 
-def resnapshot(path: str, actor: str = "owner") -> dict:
+def resnapshot(path: str) -> dict:
     """Preservation repair: earlier staging snapshotted only human-sender
     messages. Register the FULL transcript as additional evidence for every
     conversation that lacks one (same URI; metadata.supersedes points at the
@@ -124,7 +124,6 @@ def resnapshot(path: str, actor: str = "owner") -> dict:
                       "conversation_uuid": item["uuid"],
                       "supersedes": partial_by_uri[item["uri"]],
                       "note": "full-transcript re-snapshot; earlier evidence held human messages only"},
-            actor=actor,
         )
         added += 1
     return engine._after_write({"full_transcripts_added": added})
@@ -137,12 +136,18 @@ def ingested_uris() -> set[str]:
 
 
 def pending(path: str, limit: int = 10) -> list[dict]:
-    done = ingested_uris()
-    return [i for i in read_export(path) if i["uri"] not in done][:limit]
+    # Compare preserved content, not just identity or update dates. Older
+    # snapshots remain valid evidence; an edit creates another version.
+    done = {(e.get("uri"), e.get("digest"))
+            for e in engine.get_log().state()["evidence"].values()
+            if (e.get("metadata") or {}).get("role") == "stream-item"}
+    return [i for i in read_export(path)
+            if (i["uri"], "sha256:" + sha256_hex(
+                canonical_json(full_transcript(i)).encode("utf-8"))) not in done][:limit]
 
 
-def stage(path: str, limit: int = 10, actor: str = "owner") -> list[dict]:
-    """Snapshot pending items as evidence; return them for extraction."""
+def stage(path: str, limit: int = 10) -> list[dict]:
+    """Snapshot new or changed items as evidence; return them for extraction."""
     log = engine.get_log()
     staged = []
     for item in pending(path, limit):
@@ -154,7 +159,6 @@ def stage(path: str, limit: int = 10, actor: str = "owner") -> list[dict]:
             metadata={"role": "stream-item", "source": SOURCE, "transcript": "full",
                       "name": item["name"], "updated_at": item["updated_at"],
                       "conversation_uuid": item["uuid"]},
-            actor=actor,
         )
         text = "\n".join(f"[{m['at']}] {m['text']}" for m in item["human_messages"])
         staged.append({
@@ -167,7 +171,7 @@ def stage(path: str, limit: int = 10, actor: str = "owner") -> list[dict]:
     return staged
 
 
-def apply(proposals: list[dict], extractor: str, actor: str = "owner") -> dict:
+def apply(proposals: list[dict], extractor: str) -> dict:
     """Capture extraction proposals as grounded beliefs. Every proposal must
     reference staged evidence; duplicates are skipped and reported, and one
     bad proposal never blocks the rest (each capture is its own event)."""
@@ -197,7 +201,6 @@ def apply(proposals: list[dict], extractor: str, actor: str = "owner") -> dict:
                 metadata={"extractor": extractor, "source": SOURCE,
                           "note": p.get("note", "")},
                 grounding=grounding,
-                actor=actor,
             )
             state = log.state()
             captured.append(p["belief_id"])

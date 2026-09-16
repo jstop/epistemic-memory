@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import engine  # noqa: E402
 import ingest  # noqa: E402
 
-ENV_KEYS = ("EPISTEMIC_DB_PATH", "EPISTEMIC_CONTENT_DIR", "EPISTEMIC_BELIEFS_DIR",
+ENV_KEYS = ("EPISTEMIC_ACTOR", "EPISTEMIC_DB_PATH", "EPISTEMIC_CONTENT_DIR", "EPISTEMIC_BELIEFS_DIR",
             "EPISTEMIC_EVENTS_JSONL", "EPISTEMIC_INDEX_PATH")
 
 EXPORT = [
@@ -57,6 +57,7 @@ class IngestTest(unittest.TestCase):
         root = Path(self.tmp.name)
         self._saved = {k: os.environ.get(k) for k in ENV_KEYS}
         os.environ["EPISTEMIC_DB_PATH"] = str(root / "canonical.db")
+        os.environ["EPISTEMIC_ACTOR"] = "test:fixture"
         os.environ["EPISTEMIC_CONTENT_DIR"] = str(root / "evidence_store")
         os.environ["EPISTEMIC_BELIEFS_DIR"] = str(root / "beliefs")
         os.environ["EPISTEMIC_EVENTS_JSONL"] = str(root / "events.jsonl")
@@ -104,6 +105,36 @@ class IngestTest(unittest.TestCase):
             self.assertIsNotNone(log.evidence_content(s["evidence_id"]))
         # An item that yields no beliefs stays ingested — never re-staged.
         self.assertEqual(ingest.pending(str(self.export)), [])
+
+    def test_changed_conversation_gets_new_snapshot_even_with_same_date(self):
+        first = ingest.stage(str(self.export), limit=2)
+        old_id = first[0]["evidence_id"]
+        log = engine.get_log()
+        old_content = log.evidence_content(old_id)
+        data = json.loads(self.export.read_text())
+        # Same URI and timestamp: content changes alone must be enough.
+        data[0]["chat_messages"].append({"sender": "human", "text": "Correction: I stopped.",
+                                          "created_at": "2026-05-09T11:00:00Z"})
+        self.export.write_text(json.dumps(data))
+        self.assertEqual([i["uuid"] for i in ingest.pending(str(self.export))], ["conv-newer"])
+        updated = ingest.stage(str(self.export))
+        self.assertEqual(len(updated), 1)
+        self.assertNotEqual(updated[0]["evidence_id"], old_id)
+        self.assertEqual(log.evidence_content(old_id), old_content)
+        self.assertIn(b"Correction: I stopped.", log.evidence_content(updated[0]["evidence_id"]))
+        self.assertEqual(ingest.pending(str(self.export)), [])
+        replay = log.replay_into(Path(self.tmp.name) / "replayed.db")
+        try:
+            from unittest.mock import patch
+            with patch.object(engine, "get_log", return_value=replay):
+                self.assertEqual(ingest.pending(str(self.export)), [])
+        finally:
+            replay.close()
+
+    def test_reference_only_evidence_does_not_skip_conversation_snapshot(self):
+        engine.get_log().register_evidence(media_type="application/json",
+                                           uri=ingest.item_uri("conv-newer"))
+        self.assertEqual(len(ingest.pending(str(self.export))), 2)
 
     # -- apply -----------------------------------------------------------------
 

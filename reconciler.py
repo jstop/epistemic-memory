@@ -92,13 +92,12 @@ def candidates(min_score: float = 0.15, limit: int = 50) -> list[dict]:
     return out[:limit]
 
 
-def apply(judgments: list[dict], judge: str, metadata: dict | None = None,
-          actor: str = "owner") -> dict:
+def apply(judgments: list[dict], judge: str, metadata: dict | None = None) -> dict:
     """Record one reconciliation pass atomically, then refresh projections.
     Projection failure never un-does the canonical write."""
     engine.get_log().record_reconciliation(
         reconciler=RECONCILER, version=VERSION, judge=judge,
-        judgments=judgments, metadata=metadata, actor=actor)
+        judgments=judgments, metadata=metadata)
     summary = {
         "recorded": len(judgments),
         "relationships": sum(1 for j in judgments if j["verdict"] != "UNRELATED"),

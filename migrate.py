@@ -61,7 +61,7 @@ def migrate(commit: bool) -> None:
         print("dry run — pass --commit to import")
         return
 
-    log = CanonicalLog(DB_PATH, CONTENT_DIR)
+    log = CanonicalLog(DB_PATH, CONTENT_DIR, actor="migration:yaml-import")
     try:
         if log.state()["beliefs"]:
             raise SystemExit("canonical.db already contains beliefs — refusing to re-import")
@@ -73,7 +73,6 @@ def migrate(commit: bool) -> None:
                 content=path.read_bytes(),
                 metadata={"role": "pre-log-record",
                           "note": "snapshot of the pre-log YAML store at import time"},
-                actor="migration:yaml-import",
             )
             for b in beliefs:
                 original = jsonsafe(b)
@@ -96,7 +95,6 @@ def migrate(commit: bool) -> None:
                         "reconstructed": True,
                         "original": original,
                     },
-                    actor="migration:yaml-import",
                 )
                 imported += 1
         # Original `links` become explicit DEPENDS_ON relationships, appended
@@ -109,7 +107,7 @@ def migrate(commit: bool) -> None:
                         log.record_relationship(
                             b["id"], "DEPENDS_ON", target,
                             note="reconstructed from pre-log links field",
-                            method="derived", actor="migration:yaml-import",
+                            method="derived",
                         )
         assert log.verify_chain()
         n = len(log.state()["beliefs"])

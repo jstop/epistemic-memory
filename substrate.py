@@ -39,6 +39,8 @@ EVENT_TYPES = (
     "EvidenceRegistered",
     "BeliefFormed",
     "BeliefRestated",
+    "GroundingAdded",
+    "AnchorSet",
     "VerificationRecorded",
     "ContradictionRecorded",
     "ContradictionResolved",
@@ -47,6 +49,7 @@ EVENT_TYPES = (
     "ReconciliationRun",
     "VisibilityChanged",
     "InterpretationRecorded",
+    "AttributionCorrected",
 )
 
 RELATIONSHIPS = (
@@ -55,6 +58,26 @@ RELATIONSHIPS = (
 )
 
 DURABILITIES = ("SNAPSHOTTED", "REFERENCED", "EPHEMERAL")
+
+# The one principal whose word is their own. Everything else that writes —
+# an MCP client, a non-interactive script, a migration — composes ON BEHALF
+# of the owner and is named as itself. Only the owner channel may claim this.
+OWNER = "owner"
+
+
+def effective_actor(ev: dict, corrections: list[dict]) -> str:
+    """The actor an event is attributed to after AttributionCorrected events.
+    Corrections apply in order; each rewrites the attribution of events in
+    its sequence range whose current attribution matches `recorded_actor`.
+    The raw `actor` column is never touched — this is a read-time projection."""
+    actor = ev["actor"]
+    for c in corrections:
+        if c["sequence"] <= ev["sequence"]:
+            continue  # a correction speaks only about events before it
+        if c["from_sequence"] <= ev["sequence"] <= c["through_sequence"] \
+                and actor == c["recorded_actor"]:
+            actor = c["actual_actor"]
+    return actor
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS events (
@@ -134,7 +157,14 @@ class EvidenceStore:
 class CanonicalLog:
     """The append-only canonical event log plus its derived state projection."""
 
-    def __init__(self, db_path: str | Path, content_dir: str | Path):
+    def __init__(self, db_path: str | Path, content_dir: str | Path, *, actor: str):
+        """Open the log AS a principal. Every event this handle appends is
+        attributed to `actor`; there is no per-call override. Who is writing
+        is a property of the channel that opened the log (the MCP server,
+        an interactive terminal, a migration), never of a request payload."""
+        if not isinstance(actor, str) or not actor.strip():
+            raise ValueError("a CanonicalLog must be opened as a named actor")
+        self.actor = actor.strip()
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self.store = EvidenceStore(content_dir)
@@ -151,8 +181,7 @@ class CanonicalLog:
     def register_evidence(self, *, media_type: str, uri: str | None = None,
                           content: bytes | str | None = None,
                           durability: str | None = None,
-                          metadata: dict | None = None,
-                          actor: str = "owner") -> str:
+                          metadata: dict | None = None) -> str:
         if content is None and uri is None:
             raise ValueError("evidence needs content or a uri")
         digest = None
@@ -169,7 +198,7 @@ class CanonicalLog:
         if durability == "SNAPSHOTTED" and digest is None:
             raise ValueError("SNAPSHOTTED evidence requires content (digest)")
         evidence_id = new_id("evd")
-        self._append("EvidenceRegistered", actor, {"evidence": {
+        self._append("EvidenceRegistered", {"evidence": {
             "evidence_id": evidence_id,
             "media_type": media_type,
             "uri": uri,
@@ -188,8 +217,7 @@ class CanonicalLog:
                     unsupported: bool = False,
                     observed_at: str | None = None,
                     metadata: dict | None = None,
-                    grounding: list[dict] | None = None,
-                    actor: str = "owner") -> str:
+                    grounding: list[dict] | None = None) -> str:
         evidence_ids = list(evidence_ids or [])
         premise_ids = list(premise_ids or [])
         if method not in METHODS:
@@ -220,7 +248,7 @@ class CanonicalLog:
         for pid in premise_ids:
             if pid not in state["beliefs"]:
                 raise ValueError(f"unknown premise belief: {pid}")
-        self._append("BeliefFormed", actor, {"belief": {
+        self._append("BeliefFormed", {"belief": {
             "belief_id": belief_id,
             "claim": claim,
             "method": method,
@@ -320,21 +348,53 @@ class CanonicalLog:
     # ------------------------------------------------- later layers (append)
 
     def restate_belief(self, belief_id: str, new_claim: str, note: str = "",
-                       grounding: list[dict] | None = None,
-                       actor: str = "owner") -> None:
+                       grounding: list[dict] | None = None) -> None:
         self._require_belief(belief_id)
         spans = [self.resolve_span(g) for g in (grounding or [])]
-        self._append("BeliefRestated", actor, {
+        self._append("BeliefRestated", {
             "belief_id": belief_id, "new_claim": new_claim, "note": note,
             "grounding": spans,
+        })
+
+    def add_grounding(self, belief_id: str, evidence_ids: list[str] | None = None,
+                      grounding: list[dict] | None = None, note: str = "") -> None:
+        """Attach further evidence (and/or located spans) to an EXISTING belief
+        without touching its claim text or authorship. This is how a belief
+        acquires support it did not have at capture — an argument built for it
+        later, a source found afterwards. The claim stays whose it was; only
+        what stands under it grows."""
+        self._require_belief(belief_id)
+        state = self.state()
+        evidence_ids = list(evidence_ids or [])
+        spans = [self.resolve_span(g, state) for g in (grounding or [])]
+        for sp in spans:
+            if sp["evidence_id"] not in evidence_ids:
+                evidence_ids.append(sp["evidence_id"])
+        if not evidence_ids:
+            raise ValueError("add_grounding needs evidence_ids or grounding spans")
+        for eid in evidence_ids:
+            if eid not in state["evidence"]:
+                raise ValueError(f"unknown evidence: {eid}")
+        self._append("GroundingAdded", {
+            "belief_id": belief_id, "evidence_ids": evidence_ids,
+            "grounding": spans, "note": note,
+        })
+
+    def set_anchor(self, belief_id: str, anchor: str | None,
+                   anchor_cost: str | None = None, note: str = "") -> None:
+        """Set or replace how a belief is re-checked. The previous anchor stays
+        in history; an empty anchor records that the belief is unanchored."""
+        self._require_belief(belief_id)
+        self._append("AnchorSet", {
+            "belief_id": belief_id, "anchor": (anchor or None),
+            "anchor_cost": anchor_cost, "note": note,
         })
 
     def record_interpretation(self, *, kind: str, statement: str,
                               grounding: list[dict], interpreter: str,
                               subjects: list[str] | None = None,
                               supersedes: str | None = None,
-                              note: str = "", metadata: dict | None = None,
-                              actor: str = "owner") -> str:
+                              note: str = "", metadata: dict | None = None) -> str:
         """Record a DERIVED interpretation of history — a hypothesis, theme,
         relation, inferred intention, attribution beyond literal authorship,
         candidate belief... `kind` is a free label, not an ontology. It must
@@ -357,7 +417,7 @@ class CanonicalLog:
         if supersedes and supersedes not in state["interpretations"]:
             raise ValueError(f"unknown interpretation to supersede: {supersedes}")
         iid = new_id("int")
-        self._append("InterpretationRecorded", actor, {"interpretation": {
+        self._append("InterpretationRecorded", {"interpretation": {
             "interpretation_id": iid, "kind": kind, "statement": statement,
             "grounding": spans, "interpreter": interpreter,
             "subjects": list(subjects or []), "supersedes": supersedes,
@@ -367,9 +427,13 @@ class CanonicalLog:
 
     def record_verification(self, belief_id: str, verdict: str,
                             output: str | None = None, command: str | None = None,
-                            actor: str = "owner") -> str | None:
-        if verdict not in ("verified", "contradicted"):
-            raise ValueError("verdict must be 'verified' or 'contradicted'")
+                            *, execution: dict | None = None,
+                            requested_verdict: str | None = None, note: str = "") -> str | None:
+        if verdict not in ("verified", "contradicted", "failed"):
+            raise ValueError("verdict must be verified, contradicted, or failed")
+        if execution and (execution.get("timed_out") or execution.get("returncode") != 0):
+            requested_verdict = requested_verdict or verdict
+            verdict = "failed"
         self._require_belief(belief_id)
         evidence_id = None
         if output is not None:
@@ -377,51 +441,76 @@ class CanonicalLog:
                 media_type="text/plain",
                 uri=f"anchor://{belief_id}",
                 content=output,
-                metadata={"command": command, "role": "verification-output"},
-                actor=actor,
+                metadata={"command": command, "role": "verification-output",
+                          "execution": execution},
             )
-        self._append("VerificationRecorded", actor, {
+        self._append("VerificationRecorded", {
             "belief_id": belief_id, "verdict": verdict,
             "evidence_id": evidence_id, "command": command,
+            "execution": execution, "requested_verdict": requested_verdict, "note": note,
         })
         return evidence_id
 
     def record_contradiction(self, belief_id: str, contradicting_id: str,
-                             note: str = "", actor: str = "owner") -> None:
+                             note: str = "") -> None:
         self._require_belief(belief_id)
         state = self.state()
         if contradicting_id not in state["beliefs"] and contradicting_id not in state["evidence"]:
             raise ValueError(f"unknown contradicting object: {contradicting_id}")
-        self._append("ContradictionRecorded", actor, {
+        self._append("ContradictionRecorded", {
             "belief_id": belief_id, "contradicting_id": contradicting_id, "note": note,
         })
 
-    def resolve_contradiction(self, belief_id: str, note: str,
-                              actor: str = "owner") -> None:
+    def resolve_contradiction(self, belief_id: str, note: str) -> None:
         self._require_belief(belief_id)
-        self._append("ContradictionResolved", actor, {
+        self._append("ContradictionResolved", {
             "belief_id": belief_id, "note": note,
         })
 
-    def set_visibility(self, belief_id: str, ambient: bool, note: str = "",
-                       actor: str = "owner") -> None:
+    def set_visibility(self, belief_id: str, ambient: bool, note: str = "") -> None:
         """Change whether a belief is surfaced in ambient projections (the
         MEMORY.md index). A recorded state, not deletion: non-ambient beliefs
         remain in canonical history and answer explicit recall."""
         self._require_belief(belief_id)
-        self._append("VisibilityChanged", actor, {
+        self._append("VisibilityChanged", {
             "belief_id": belief_id, "ambient": bool(ambient), "note": note,
         })
 
-    def retire_belief(self, belief_id: str, reason: str, actor: str = "owner") -> None:
+    def retire_belief(self, belief_id: str, reason: str) -> None:
         self._require_belief(belief_id)
-        self._append("BeliefRetired", actor, {
+        self._append("BeliefRetired", {
             "belief_id": belief_id, "reason": reason,
         })
 
+    def correct_attribution(self, *, through_sequence: int, recorded_actor: str,
+                            actual_actor: str, reason: str,
+                            from_sequence: int = 1) -> str:
+        """Record that events in [from_sequence, through_sequence] whose actor
+        column says `recorded_actor` were in fact written by `actual_actor`.
+        History is not rewritten: the raw column stays, the correction is one
+        more event, and attribution is projected at read time. This is how a
+        log that misattributed its own past says so — the same corrections-as-
+        history rule that governs every other change."""
+        if not recorded_actor.strip() or not actual_actor.strip():
+            raise ValueError("attribution correction needs recorded and actual actors")
+        if recorded_actor.strip() == actual_actor.strip():
+            raise ValueError("attribution correction changes nothing")
+        if not reason.strip():
+            raise ValueError("attribution correction needs a reason")
+        head = self.conn.execute("SELECT MAX(sequence) AS n FROM events").fetchone()["n"] or 0
+        if not (1 <= from_sequence <= through_sequence <= head):
+            raise ValueError(
+                f"correction range [{from_sequence}, {through_sequence}] must lie within 1..{head}")
+        return self._append("AttributionCorrected", {
+            "from_sequence": int(from_sequence),
+            "through_sequence": int(through_sequence),
+            "recorded_actor": recorded_actor.strip(),
+            "actual_actor": actual_actor.strip(),
+            "reason": reason.strip(),
+        })
+
     def record_reconciliation(self, *, reconciler: str, version: str, judge: str,
-                              judgments: list[dict], metadata: dict | None = None,
-                              actor: str = "owner") -> str:
+                              judgments: list[dict], metadata: dict | None = None) -> str:
         """Record one reconciliation pass ATOMICALLY: every examined pair with
         its verdict — a relationship type or UNRELATED — in a single canonical
         event. UNRELATED verdicts matter: they record that the pair was
@@ -448,7 +537,7 @@ class CanonicalLog:
             if pair in seen_pairs:
                 raise ValueError(f"duplicate pair in run: {sorted(pair)}")
             seen_pairs.add(pair)
-        self._append("ReconciliationRun", actor, {"run": {
+        self._append("ReconciliationRun", {"run": {
             "reconciler": reconciler,
             "version": version,
             "judge": judge,
@@ -462,13 +551,12 @@ class CanonicalLog:
         return f"{reconciler}@{version}"
 
     def record_relationship(self, subject_id: str, rel: str, object_id: str,
-                            note: str = "", method: str = "derived",
-                            actor: str = "owner") -> None:
+                            note: str = "", method: str = "derived") -> None:
         if rel not in RELATIONSHIPS:
             raise ValueError(f"relationship '{rel}' not in {RELATIONSHIPS}")
         self._require_belief(subject_id)
         self._require_belief(object_id)
-        self._append("RelationshipRecorded", actor, {"relationship": {
+        self._append("RelationshipRecorded", {"relationship": {
             "subject_id": subject_id, "rel": rel, "object_id": object_id,
             "note": note, "method": method,
         }})
@@ -482,25 +570,58 @@ class CanonicalLog:
         relationships: list[dict] = []
         reconciled_pairs: list[list[str]] = []
         interpretations: dict[str, dict] = {}
-        for ev in self.events():
+        events = self.events()
+        corrections = [dict(ev["payload"], sequence=ev["sequence"],
+                            recorded_at=ev["recorded_at"], actor=ev["actor"])
+                       for ev in events if ev["event_type"] == "AttributionCorrected"]
+        for ev in events:
             t, p, at = ev["event_type"], ev["payload"], ev["recorded_at"]
+            who = effective_actor(ev, corrections)
             if t == "EvidenceRegistered":
-                evidence[p["evidence"]["evidence_id"]] = dict(p["evidence"], recorded_at=at)
+                evidence[p["evidence"]["evidence_id"]] = dict(p["evidence"], recorded_at=at, actor=who)
             elif t == "BeliefFormed":
                 b = dict(p["belief"])
                 b.setdefault("grounding", [])
                 b.update(contested=False, retired=False, retired_reason=None,
                          ambient=True, verified_at=None, recorded_at=at,
-                         claim_history=[{"claim": b["claim"], "at": at, "origin": "formed"}],
-                         history=[])
+                         claim_history=[{"claim": b["claim"], "at": at, "origin": "formed",
+                                         "actor": who}],
+                         history=[],
+                         # Who composed the claim text as it now stands, and
+                         # who has put their own name to it. Anything composed
+                         # by someone other than the owner is a draft until
+                         # the owner stands behind it.
+                         authorship={
+                             "composed_by": who,
+                             "recorded_as": ev["actor"],
+                             "corrected": who != ev["actor"],
+                             "stood_behind_by": OWNER if who == OWNER else None,
+                         })
                 beliefs[b["belief_id"]] = b
             elif t == "BeliefRestated":
                 b = beliefs[p["belief_id"]]
                 b["claim"] = p["new_claim"]
+                b["authorship"]["composed_by"] = who
+                b["authorship"]["stood_behind_by"] = OWNER if who == OWNER else None
                 b["claim_history"].append({"claim": p["new_claim"], "at": at,
                                            "origin": "restated", "note": p.get("note", ""),
-                                           "grounding": p.get("grounding", [])})
+                                           "grounding": p.get("grounding", []),
+                                           "actor": who})
                 b["grounding"] = b["grounding"] + p.get("grounding", [])
+            elif t == "GroundingAdded":
+                b = beliefs[p["belief_id"]]
+                for eid in p.get("evidence_ids", []):
+                    if eid not in b.setdefault("evidence_ids", []):
+                        b["evidence_ids"].append(eid)
+                b["grounding"] = b.get("grounding", []) + p.get("grounding", [])
+                # Support arriving later can only make an unsupported belief
+                # supported, never the reverse.
+                if b.get("unsupported") and b["method"] in ("observed", "asserted", "derived", "inferred"):
+                    b["unsupported"] = False
+            elif t == "AnchorSet":
+                b = beliefs[p["belief_id"]]
+                b["anchor"] = p.get("anchor")
+                b["anchor_cost"] = p.get("anchor_cost")
             elif t == "InterpretationRecorded":
                 i = dict(p["interpretation"], recorded_at=at, superseded_by=None)
                 interpretations[i["interpretation_id"]] = i
@@ -508,10 +629,11 @@ class CanonicalLog:
                     interpretations[i["supersedes"]]["superseded_by"] = i["interpretation_id"]
             elif t == "VerificationRecorded":
                 b = beliefs[p["belief_id"]]
+                b["verification_failed"] = p["verdict"] == "failed"
                 if p["verdict"] == "verified":
                     b["verified_at"] = at
                     b["contested"] = False
-                else:
+                elif p["verdict"] == "contradicted":
                     b["contested"] = True
             elif t == "ContradictionRecorded":
                 beliefs[p["belief_id"]]["contested"] = True
@@ -538,14 +660,16 @@ class CanonicalLog:
                             "judge": run["judge"], "recorded_at": at,
                         })
             if t not in ("EvidenceRegistered", "RelationshipRecorded", "ReconciliationRun",
-                         "InterpretationRecorded"):
+                         "InterpretationRecorded", "AttributionCorrected"):
                 bid = p.get("belief_id") or p.get("belief", {}).get("belief_id")
                 if bid and bid in beliefs:
                     beliefs[bid]["history"].append(
-                        {"sequence": ev["sequence"], "event_type": t, "at": at, "payload": p})
+                        {"sequence": ev["sequence"], "event_type": t, "at": at,
+                         "actor": who, "payload": p})
         return {"beliefs": beliefs, "evidence": evidence,
                 "relationships": relationships, "reconciled_pairs": reconciled_pairs,
-                "interpretations": interpretations}
+                "interpretations": interpretations,
+                "attribution_corrections": corrections}
 
     def why(self, belief_id: str, _seen: set[str] | None = None) -> dict:
         """Provenance walk: belief -> formation evidence and verification
@@ -567,6 +691,9 @@ class CanonicalLog:
         verifications = [
             {"verdict": h["payload"]["verdict"], "at": h["at"],
              "command": h["payload"].get("command"),
+             "execution": h["payload"].get("execution"),
+             "requested_verdict": h["payload"].get("requested_verdict"),
+             "note": h["payload"].get("note", ""),
              "evidence": enrich(h["payload"]["evidence_id"])
                          if h["payload"].get("evidence_id") else None}
             for h in b["history"] if h["event_type"] == "VerificationRecorded"
@@ -576,6 +703,7 @@ class CanonicalLog:
             "claim": b["claim"],
             "method": b["method"],
             "unsupported": b.get("unsupported", False),
+            "authorship": b["authorship"],
             "grounding": [self.span_with_author(s, state) for s in b.get("grounding", [])],
             "evidence": ev,
             "verifications": verifications,
@@ -624,7 +752,7 @@ class CanonicalLog:
         target_path = Path(new_db_path)
         if target_path.exists():
             target_path.unlink()
-        target = CanonicalLog(target_path, self.store.root)
+        target = CanonicalLog(target_path, self.store.root, actor=self.actor)
         previous = None
         expected_seq = 0
         for ev in self.events():
@@ -656,8 +784,9 @@ class CanonicalLog:
         if belief_id not in self.state()["beliefs"]:
             raise ValueError(f"no belief '{belief_id}'")
 
-    def _append(self, event_type: str, actor: str, payload: dict) -> str:
+    def _append(self, event_type: str, payload: dict) -> str:
         assert event_type in EVENT_TYPES
+        actor = self.actor
         try:
             # Acquire the write lock before reading the chain head.
             self.conn.execute("BEGIN IMMEDIATE")

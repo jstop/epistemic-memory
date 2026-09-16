@@ -24,8 +24,10 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner
 - id: chat-health-research
   claim: Josh researches histamine intolerance and long-COVID-adjacent health topics (neuromuscular medicine,
     DAO enzyme, low-histamine diet) for his own health management
@@ -38,6 +40,7 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
 - id: chat-long-covid
   claim: 'Josh has long COVID (2+ years, since ~2023): recurrent illness (~a dozen times/year), systemic
     inflammation with cardiac involvement (myocarditis; afib treated by ablation ~late 2024, kava-triggered
@@ -84,14 +87,19 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner
 - id: chat-no-alcohol
   claim: Josh does not drink alcohol
   method: asserted
@@ -103,6 +111,7 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
 - id: chat-va-care
   claim: Josh receives medical care through the VA (attended a VA appointment in the Dallas area, July
     2026)
@@ -115,6 +124,7 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
 - id: chat-va-deerfield
   claim: Josh's home VA facility is Deerfield Beach, FL; on the road he uses the VA traveling-veterans
     program, with a separate primary handling his long COVID
@@ -127,6 +137,7 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
 - id: chat-vegan-at-home
   claim: Josh prefers to eat vegan at home (within his low-histamine constraints); Liz was mostly vegan
     + seafood
@@ -141,5 +152,7 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRetired
+    actor: owner

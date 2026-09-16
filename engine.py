@@ -23,11 +23,12 @@ import json
 import os
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 import yaml
 
-from substrate import METHODS, VOLATILITIES, CanonicalLog, canonical_json
+from substrate import METHODS, OWNER, VOLATILITIES, CanonicalLog, canonical_json
 
 REPO_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -76,14 +77,57 @@ def index_path() -> str:
     )
 
 
-_LOGS: dict[str, CanonicalLog] = {}
+# ------------------------------------------------------------------ actor
+#
+# Who is writing is decided by the CHANNEL this process is, never by a field
+# in a request. The MCP server declares itself an agent at import; a script
+# or an agent's shell tool has no terminal and is named as such; only a
+# person at an interactive terminal writes as the owner. This does not resist
+# forgery — an in-process caller can set anything — it resists the failure
+# that actually happens: a machine filling the owner's slot by default.
+
+CHANNEL_ACTOR: str | None = None  # set by the process that IS a channel (server.py)
+
+
+def agent_actor(name: str | None) -> str:
+    """Normalize an agent's self-description into an actor id. Never the owner."""
+    n = (name or "").strip().removeprefix("agent:").strip()
+    if not n or n == OWNER:
+        n = "unknown"
+    return f"agent:{n}"
+
+
+def resolve_actor() -> str:
+    if CHANNEL_ACTOR:
+        return CHANNEL_ACTOR
+    explicit = os.environ.get("EPISTEMIC_ACTOR", "").strip()
+    if explicit and explicit != OWNER:
+        return explicit
+    try:
+        interactive = sys.stdin.isatty()
+    except (AttributeError, ValueError):
+        interactive = False
+    return OWNER if interactive else "agent:cli"
+
+
+def require_owner(action: str) -> str:
+    actor = resolve_actor()
+    if actor != OWNER:
+        raise PermissionError(
+            f"{action} is the owner's word alone; this channel writes as '{actor}'. "
+            "Run it from an interactive terminal.")
+    return actor
+
+
+_LOGS: dict[tuple[str, str], CanonicalLog] = {}
 
 
 def get_log() -> CanonicalLog:
-    path = db_path()
-    if path not in _LOGS:
-        _LOGS[path] = CanonicalLog(path, content_dir())
-    return _LOGS[path]
+    """The canonical log, opened as the principal this process resolves to."""
+    key = (db_path(), resolve_actor())
+    if key not in _LOGS:
+        _LOGS[key] = CanonicalLog(key[0], content_dir(), actor=key[1])
+    return _LOGS[key]
 
 
 def today() -> dt.date:
@@ -127,13 +171,16 @@ def _view(bid: str, b: dict, relationships: list[dict]) -> dict:
         "retired_reason": b.get("retired_reason"),
         "ambient": bool(b.get("ambient", True)),
         "unsupported": bool(b.get("unsupported")),
+        "verification_failed": bool(b.get("verification_failed")),
         "reconstructed": bool((b.get("metadata") or {}).get("reconstructed")),
         "links": links,
         "evidence_ids": list(b.get("evidence_ids") or []),
         "premise_ids": list(b.get("premise_ids") or []),
         "claim_history": b["claim_history"],
-        "events": [{"at": h["at"][:10], "op": h["event_type"]} for h in b["history"]],
+        "events": [{"at": h["at"][:10], "op": h["event_type"], "actor": h.get("actor")}
+                   for h in b["history"]],
         "grounding": list(b.get("grounding") or []),
+        "authorship": dict(b.get("authorship") or {}),
     }
 
 
@@ -181,6 +228,8 @@ def stance(b: dict, ref: dt.date) -> str:
         return "CONTESTED"
     if b.get("method") == "inferred":
         return "HYPOTHESIS"
+    if b.get("unsupported") or b.get("verification_failed"):
+        return "SUSPECT"
     bucket, _ = freshness(b, ref)
     if bucket in ("historical", "fresh"):
         return "NOTE" if b.get("method") == "derived" and bucket == "fresh" else "RELY"
@@ -206,6 +255,10 @@ def dependency_degradation(b: dict, by_id: dict[str, dict],
             continue
         if p.get("retired"):
             return f"premise retired: {pid}"
+        if p.get("unsupported"):
+            return f"premise unsupported: {pid}"
+        if p.get("verification_failed"):
+            return f"premise verification failed: {pid}"
         if p.get("contested"):
             return f"premise contested: {pid}"
         deeper = dependency_degradation(p, by_id, stack)
@@ -222,8 +275,11 @@ def stamped(b: dict, ref: dt.date | None = None,
             by_id: dict[str, dict] | None = None) -> dict:
     """A belief wearing its stance — the ONLY shape reads return. Pass `by_id`
     (all belief views) to make the stance dependency-aware: a contested or
-    retired premise caps dependents at SUSPECT, with the reason stated."""
+    retired premise caps dependents at SUSPECT, with the reason stated.
+    Omitted context is loaded from canonical history for consistent write responses."""
     ref = ref or today()
+    if by_id is None:
+        by_id = all_views_by_id()
     st = stance(b, ref)
     degraded_reason = None
     if by_id is not None and st != "CONTESTED":
@@ -244,12 +300,17 @@ def stamped(b: dict, ref: dt.date | None = None,
         "verified_at": b.get("verified_at"),
         "contested": bool(b.get("contested")),
         "unsupported": bool(b.get("unsupported")),
+        "verification_failed": bool(b.get("verification_failed")),
         "reconstructed": bool(b.get("reconstructed")),
         "ambient": bool(b.get("ambient", True)),
         "anchor": b.get("anchor"),
         "anchor_cost": b.get("anchor_cost"),
         "links": b.get("links", []),
         "degraded_reason": degraded_reason,
+        # Stance says whether to rely on the claim; authorship says whose
+        # claim it is. A belief the owner has not stood behind is a draft,
+        # whatever its stance, and must not be presented as the owner's word.
+        "authorship": dict(b.get("authorship") or {}),
         "guidance": {
             "RELY": "use silently",
             "NOTE": "use, state the basis",
@@ -360,23 +421,44 @@ def capture(belief: dict, evidence_content: str | None = None,
     return _after_write(result)
 
 
+def _execute_anchor(command: str) -> tuple[str, dict]:
+    """Keep command execution status separate from a caller's truth judgment."""
+    try:
+        proc = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=120)
+        return (proc.stdout + proc.stderr).strip(), {
+            "returncode": proc.returncode, "timed_out": False,
+        }
+    except subprocess.TimeoutExpired as exc:
+        def decode(value):
+            return value.decode("utf-8", "replace") if isinstance(value, bytes) else (value or "")
+        return (decode(exc.stdout) + decode(exc.stderr)).strip(), {
+            "returncode": None, "timed_out": True,
+        }
+
+
 def record_verification(belief_id: str, result: str, note: str = "") -> dict:
-    """Record a verification verdict. If the belief has an anchor, it is run
-    and its actual output becomes evidence linked to the verification."""
+    """Record judgment and execution separately; a failed anchor cannot verify a claim."""
+    if result not in ("verified", "contradicted"):
+        raise ValueError("result must be 'verified' or 'contradicted'")
     v, _ = find(belief_id)
     if v is None:
         raise ValueError(f"no belief '{belief_id}'")
-    output, command = None, v.get("anchor")
+    output, command, execution = None, v.get("anchor"), None
+    verdict = result
     if command:
-        proc = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=120)
-        output = (proc.stdout + proc.stderr).strip()
+        output, execution = _execute_anchor(command)
+        if execution["timed_out"] or execution["returncode"] != 0:
+            verdict = "failed"
     elif note:
         output = note
     get_log().record_verification(
-        belief_id, "verified" if result == "verified" else "contradicted",
-        output=output, command=command)
+        belief_id, verdict, output=output, command=command,
+        execution=execution, requested_verdict=result, note=note)
     v, _ = find(belief_id)
-    return _after_write(stamped(v))
+    out = stamped(v)
+    if verdict == "failed":
+        out["warning"] = "anchor execution failed; judgment was not applied"
+    return _after_write(out)
 
 
 def run_anchor(belief_id: str) -> dict:
@@ -385,8 +467,8 @@ def run_anchor(belief_id: str) -> dict:
         raise ValueError(f"no belief '{belief_id}'")
     if not v.get("anchor"):
         raise ValueError(f"belief '{belief_id}' has no anchor")
-    proc = subprocess.run(v["anchor"], shell=True, capture_output=True, text=True, timeout=120)
-    return {"belief": stamped(v), "observed": (proc.stdout + proc.stderr).strip()}
+    output, execution = _execute_anchor(v["anchor"])
+    return {"belief": stamped(v), "observed": output, "execution": execution}
 
 
 def reconcile(belief_id: str, new_claim: str, note: str,
@@ -401,6 +483,39 @@ def reconcile(belief_id: str, new_claim: str, note: str,
     log.restate_belief(belief_id, new_claim, note=note, grounding=grounding)
     if v["contested"]:
         log.resolve_contradiction(belief_id, note=f"reconciled: {note}")
+    v, _ = find(belief_id)
+    return _after_write(stamped(v))
+
+
+def ground(belief_id: str, *, evidence_content: str | None = None,
+           evidence_uri: str | None = None, evidence_media_type: str = "text/plain",
+           evidence_ids: list[str] | None = None, grounding: list[dict] | None = None,
+           note: str = "", evidence_metadata: dict | None = None) -> dict:
+    """Add support under an existing belief. Registers new evidence if content
+    or a uri is given, then appends a GroundingAdded event. Claim text and
+    authorship are untouched."""
+    v, _ = find(belief_id)
+    if v is None:
+        raise ValueError(f"no belief '{belief_id}'")
+    log = get_log()
+    ids = list(evidence_ids or [])
+    if evidence_content is not None or evidence_uri is not None:
+        ids.append(log.register_evidence(
+            media_type=evidence_media_type, uri=evidence_uri, content=evidence_content,
+            metadata=dict(evidence_metadata or {}, role="grounding", note=note),
+        ))
+    log.add_grounding(belief_id, evidence_ids=ids, grounding=grounding, note=note)
+    v, _ = find(belief_id)
+    return _after_write(stamped(v))
+
+
+def set_anchor(belief_id: str, anchor: str | None, anchor_cost: str | None = None,
+               note: str = "") -> dict:
+    """Set or replace a belief's re-check command."""
+    v, _ = find(belief_id)
+    if v is None:
+        raise ValueError(f"no belief '{belief_id}'")
+    get_log().set_anchor(belief_id, anchor, anchor_cost=anchor_cost, note=note)
     v, _ = find(belief_id)
     return _after_write(stamped(v))
 
@@ -471,7 +586,52 @@ def health() -> dict:
             stalest.append(item)
     out = {"total": sum(counts.values()), "by_stance": counts, "needs_attention": stalest}
     out["chain_valid"] = get_log().verify_chain()
+    out["authorship"] = authorship_census()
     return out
+
+
+def authorship_census() -> dict:
+    """Who composed the record, and how much of it the owner stands behind.
+    The number to watch is `stood_behind_by_owner` against `total`: when it
+    drifts toward zero unnoticed, the log has become a machine's draft
+    wearing the owner's name."""
+    state = get_log().state()
+    composers: dict[str, int] = {}
+    stood = 0
+    for b in state["beliefs"].values():
+        if b.get("retired"):
+            continue
+        a = b.get("authorship") or {}
+        composers[a.get("composed_by", "?")] = composers.get(a.get("composed_by", "?"), 0) + 1
+        if a.get("stood_behind_by") == OWNER:
+            stood += 1
+    raw: dict[str, int] = {}
+    for ev in get_log().events():
+        raw[ev["actor"]] = raw.get(ev["actor"], 0) + 1
+    return {
+        "beliefs_by_composer": composers,
+        "stood_behind_by_owner": stood,
+        "events_by_recorded_actor": raw,
+        "attribution_corrections": [
+            {"at": c["recorded_at"][:10], "range": [c["from_sequence"], c["through_sequence"]],
+             "recorded_actor": c["recorded_actor"], "actual_actor": c["actual_actor"],
+             "reason": c["reason"]}
+            for c in state["attribution_corrections"]],
+        "writing_as": resolve_actor(),
+    }
+
+
+def correct_attribution(through_sequence: int, recorded_actor: str, actual_actor: str,
+                        reason: str, from_sequence: int = 1) -> dict:
+    """The owner's statement that a range of past events was written by
+    someone other than the actor column says. Owner channel only: a
+    correction of who spoke is itself speech, and a machine may not make it
+    on the owner's behalf."""
+    require_owner("attribution correction")
+    get_log().correct_attribution(
+        through_sequence=through_sequence, recorded_actor=recorded_actor,
+        actual_actor=actual_actor, reason=reason, from_sequence=from_sequence)
+    return _after_write(authorship_census())
 
 
 # -------------------------------------------------------------- projections
@@ -609,9 +769,23 @@ def main() -> int:
     w = sub.add_parser("why"); w.add_argument("id")
     pr = sub.add_parser("project"); pr.add_argument("--check", action="store_true")
     sub.add_parser("list"); sub.add_parser("health")
+    sub.add_parser("whoami", help="the actor this channel writes as")
+    ca = sub.add_parser("correct-attribution",
+                        help="owner only: state that past events were written by someone else")
+    ca.add_argument("--through", type=int, required=True, help="last event sequence covered")
+    ca.add_argument("--from", dest="from_seq", type=int, default=1)
+    ca.add_argument("--recorded", required=True, help="actor as the column says (e.g. owner)")
+    ca.add_argument("--actual", required=True, help="who actually wrote them (e.g. agent:claude-code)")
+    ca.add_argument("--reason", required=True)
     args = p.parse_args()
 
-    if args.cmd == "stamp":
+    if args.cmd == "whoami":
+        print(resolve_actor())
+    elif args.cmd == "correct-attribution":
+        out = correct_attribution(args.through, args.recorded, args.actual, args.reason,
+                                  from_sequence=args.from_seq)
+        print(_json.dumps(out, indent=2))
+    elif args.cmd == "stamp":
         print(write_index() if args.write_index else index_markdown())
     elif args.cmd == "verify":
         out = run_anchor(args.id)

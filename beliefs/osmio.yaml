@@ -15,6 +15,7 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
 - id: chat-authenticity-institute
   claim: The Authenticity Institute Inc. (a Delaware corporation) is the corporate entity behind Wes Kussmaul's
     Osmio ecosystem; Josh reviewed its NDA text (~Feb 2026) — signing is not evidenced
@@ -34,8 +35,10 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner
 - id: chat-identity-consistency-paper
   claim: Josh received an AI-drafted paper proposal ('What is the minimum consistency required for digital
     identity?') and pasted it into a chat asking who to bring it to for collaboration (Aug 2026) — an
@@ -58,8 +61,10 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner
 - id: chat-osmio-charter
   claim: Josh describes Osmio as a digital municipality chartered at the ITU in Geneva in 2005 (out of
     the ITU World e-trust initiative, despite UN rejection) — a duly constituted public authority; he
@@ -82,8 +87,10 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner
 - id: chat-osmio-keri-position
   claim: 'Josh''s architectural position: KERI is the cryptographic substrate (keys, rotation, recovery,
     deliberately governance-silent) and Osmio supplies the accountable, chartered governance layer on
@@ -97,6 +104,7 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
 - id: chat-osmio-keri-stack
   claim: Josh has been exploring and designing Osmio's identity layer on KERI/ACDC — mostly in chat design
     sessions — and evaluated the Cardano Foundation's Veridian wallet hands-on (app installed, self-deployment
@@ -121,10 +129,13 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
   - at: '2026-09-10'
     op: VerificationRecorded
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner
 - id: chat-osmio-mission
   claim: 'Osmio is Josh''s central project: grassroots, self-sovereign identity infrastructure aimed at
     accountable coordination and ''equal identity under one system of identity'''
@@ -137,6 +148,7 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
 - id: chat-osmio-origin-story
   claim: 'Josh''s path to Osmio: the ChatGPT/transformer wave (~2023) pushed him into personal-data empowerment
     thinking -> MyData Global -> introduced to Wes Kussmaul ~mid-2024 (studying Osmio''s municipal charter
@@ -167,10 +179,13 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner
 - id: chat-osmio-recruiting
   claim: 'Josh drafted an Osmio recruiting list (May 2026: Iddo Drori, Grace (Rebecca) Rachmany, Kaliya
     Young, Doc Searls) and discussed alignment strategies; no evidence any were contacted'
@@ -191,14 +206,19 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
   - at: '2026-09-10'
     op: VerificationRecorded
+    actor: owner
   - at: '2026-09-10'
     op: VerificationRecorded
+    actor: owner
   - at: '2026-09-10'
     op: VerificationRecorded
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner
 - id: chat-osmio-role
   claim: Josh accepted the Director of Communications role at Osmio around late 2025 ('a few months ago'
     as of Mar 2026), agreed with Wes; through spring 2026 it remained aspirational rather than functional
@@ -224,10 +244,13 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner
 - id: chat-osmio-tensions
   claim: 'Josh has strategic tensions with Wes''s Osmio leadership: he prefers concrete product wedges
     (solar, specific buyers) over broad pitching, and was frustrated by a wasted pitch-deck week; Wes
@@ -242,8 +265,10 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
   - at: '2026-09-10'
     op: VerificationRecorded
+    actor: owner
 - id: chat-osmio-wedge-vpp
   claim: 'Josh''s Osmio adoption-wedge direction: sovereign infrastructure via solar virtual power plants
     and mesh networks, including exploring a solar business for Osmio'
@@ -259,8 +284,10 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
   - at: '2026-09-10'
     op: VerificationRecorded
+    actor: owner
 - id: chat-personal-ai-keri-continuity
   claim: 'Josh wants his personal AI system anchored to KERI identity: his inputs vs AI outputs distinguishable
     and signed, with explicit categories separating private working thought from productionized claims'
@@ -275,6 +302,7 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
 - id: chat-reliableid-domain
   claim: reliableid.com is Wes Kussmaul's/Osmio's domain (wes@reliableid.com); Josh has joshua.stein@reliableid.com
     on it via Zoho for the identity work
@@ -296,8 +324,10 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner
 - id: chat-ssi-outreach
   claim: Josh repeatedly DRAFTED replies and outreach to SSI/identity thought leaders (Eric Pol, Christopher
     Allen, Phil Windley's synthesis, Kaliya Young) as exercises in positioning Osmio — none were sent
@@ -321,10 +351,13 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner
   - at: '2026-09-10'
     op: VerificationRecorded
+    actor: owner
 - id: chat-tedx-ambition
   claim: Josh intends to give TEDx-style talks on the Osmio/identity thesis and had a stage-ready piece
     drafted (May 2026), planning to find and sign up for speaking opportunities
@@ -337,6 +370,7 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
 - id: chat-zk-group-moi
   claim: ZK Group is the commercial entity building on Osmio's governance layer; its product MOI ('My
     Own Information') is a personal data vault — age-verification 'no-yes' angle (no-yes.org), healthcare
@@ -350,3 +384,4 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner

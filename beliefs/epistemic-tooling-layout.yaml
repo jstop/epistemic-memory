@@ -19,6 +19,7 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: migration:yaml-import
 - id: epist-consolidation-date
   claim: The epistemic-tooling consolidation happened on 2026-06-07
   method: observed
@@ -33,6 +34,7 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: migration:yaml-import
 - id: epist-location
   claim: Epistemic tooling is consolidated under ~/workspace/epistemic/
   method: observed
@@ -49,6 +51,7 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: migration:yaml-import
 - id: epist-mapper-dormant
   claim: epistemic-mapper has no development since Jan 2026; its last commit is the 2026-06-07 archival
     WIP snapshot
@@ -67,8 +70,10 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: migration:yaml-import
   - at: '2026-09-10'
     op: VerificationRecorded
+    actor: owner
 - id: epist-mapper-tests
   claim: epistemic-mapper is at 31/32 tests passing, with a known dedup-normalization failure
   method: observed
@@ -86,8 +91,10 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: migration:yaml-import
   - at: '2026-09-10'
     op: VerificationRecorded
+    actor: owner
 - id: epist-oldpaths-gone
   claim: The old paths ~/EPISTEMIC_TOOLS, ~/EPISTEMIC_WORKBENCH, ~/workspace/epistemic-mapper no longer
     exist
@@ -104,6 +111,7 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: migration:yaml-import
 - id: epist-stale-dup-pending
   claim: A stale duplicate ~/workspace/Claude_Desktop/epistemics/ is held pending user-approved deletion
   method: observed
@@ -119,8 +127,10 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: migration:yaml-import
   - at: '2026-09-10'
     op: VerificationRecorded
+    actor: owner
 - id: epist-workbench-branch
   claim: The workbench active branch is feature/workbench-editor-provenance
   method: observed
@@ -138,8 +148,10 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: migration:yaml-import
   - at: '2026-09-10'
     op: VerificationRecorded
+    actor: owner
 - id: epist-workbench-identity
   claim: workbench/ is the epistemic-workbench MCP server (public repo jstop/epistemic-workbench)
   method: observed
@@ -154,6 +166,29 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: migration:yaml-import
+- id: epist-workbench-web-ui
+  claim: The epistemic workbench has a React/FastAPI web UI (web/server.py + web/frontend) launched with
+    `make web` from ~/workspace/epistemic/workbench, served at http://127.0.0.1:8111 with ?ws=<name>&tab=<graph|summary|...>
+    deep links; on 2026-09-15 it was brought up to date with the F1-F5 features (typed edges, provenance,
+    derived confidence, supersede lifecycle, ingestion) that previously existed only in the MCP server
+  method: observed
+  volatility: structural
+  cluster: Epistemic tooling layout
+  anchor: test -f ~/workspace/epistemic/workbench/web/frontend/src/components/SourcesPanel.jsx && grep
+    -q 'add-claim' ~/workspace/epistemic/workbench/web/server.py
+  anchor_cost: cheap
+  observed_at: '2026-09-15'
+  contested: false
+  unsupported: false
+  links:
+  - epist-location
+  - epist-workbench-branch
+  - epist-workbench-identity
+  events:
+  - at: '2026-09-16'
+    op: BeliefFormed
+    actor: agent:unknown
 - id: epist-workspaces-count
   claim: There are 40 live research workspaces under ~/workspace/epistemic/workspaces/
   method: observed
@@ -171,8 +206,10 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: migration:yaml-import
   - at: '2026-09-10'
     op: VerificationRecorded
+    actor: owner
 - id: epist-workspaces-noremote
   claim: Each epistemic research workspace is a local git repo with no remote
   method: observed
@@ -191,3 +228,25 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: migration:yaml-import
+- id: episteme-roles-decided
+  claim: 'On 2026-09-15 Josh decided the roles of his epistemic systems: the living library''s canonical
+    log is the substrate for everything (beliefs, arguments, sources); recall retires later by importing
+    into the library; claim identity is the unnormalised content hash; ratification stays minimal (channel
+    actor + claim hash) for now; the unified app extends the workbench web UI, with one MCP server as
+    the real interface'
+  method: asserted
+  volatility: structural
+  cluster: Epistemic tooling layout
+  observed_at: '2026-09-15'
+  contested: false
+  unsupported: false
+  links:
+  - chat-personal-ai-keri-continuity
+  - epist-workbench-identity
+  - epist-workbench-web-ui
+  - library-home
+  events:
+  - at: '2026-09-16'
+    op: BeliefFormed
+    actor: agent:unknown

@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import engine  # noqa: E402
 
-ENV_KEYS = ("EPISTEMIC_DB_PATH", "EPISTEMIC_CONTENT_DIR", "EPISTEMIC_BELIEFS_DIR",
+ENV_KEYS = ("EPISTEMIC_ACTOR", "EPISTEMIC_DB_PATH", "EPISTEMIC_CONTENT_DIR", "EPISTEMIC_BELIEFS_DIR",
             "EPISTEMIC_EVENTS_JSONL", "EPISTEMIC_INDEX_PATH")
 
 
@@ -20,6 +20,7 @@ class VisibilityTest(unittest.TestCase):
         root = Path(self.tmp.name)
         self._saved = {k: os.environ.get(k) for k in ENV_KEYS}
         os.environ["EPISTEMIC_DB_PATH"] = str(root / "canonical.db")
+        os.environ["EPISTEMIC_ACTOR"] = "test:fixture"
         os.environ["EPISTEMIC_CONTENT_DIR"] = str(root / "evidence_store")
         os.environ["EPISTEMIC_BELIEFS_DIR"] = str(root / "beliefs")
         os.environ["EPISTEMIC_EVENTS_JSONL"] = str(root / "events.jsonl")

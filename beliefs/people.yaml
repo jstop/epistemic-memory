@@ -14,6 +14,7 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
 - id: chat-breakup-2026
   claim: Josh's ~2-year relationship with Liz (both ~40) ended around early May 2026 — she ended it; they
     shared a lease and he moved out ~May 10, going straight into Airbnb/nomadic life; the dog earlier
@@ -39,10 +40,13 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner
 - id: chat-career-background
   claim: 'Josh is a former Navy nuclear engineer, then ~10 years DevOps/platform engineering (AWS/Terraform/IaC;
     past employers include clypd); lost a job ~Oct 2024 during his post-viral illness (filed unemployment),
@@ -71,10 +75,13 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner
 - id: chat-dad-model-y
   claim: Josh's dad drives a Tesla Model Y (no factory tow hitch)
   method: asserted
@@ -86,6 +93,7 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
 - id: chat-helping-homeless
   claim: 'Josh actively helps homeless people he meets (Boca Raton, Mobile) — a practice he says Liz''s
     example awakened in him: ''I take care of homeless people now'''
@@ -98,6 +106,7 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
 - id: chat-jewish-identity
   claim: 'Josh is Jewish (his own words: ''As a Jew'', ''I''m Jewish''). Separately, a poem brief he wrote
     describes a perspective ''like someone who grew up safely in the suburbs going to Jewish camp'' with
@@ -121,8 +130,10 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner
 - id: chat-job-loss-2026
   claim: 'Josh was let go from Insperity in mid-May 2026 (the second firing that year from the same employer;
     offered 2-week severance against a release of claims) — combined with the breakup it precipitated
@@ -145,8 +156,10 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner
 - id: chat-mobile-friend-support
   claim: 'Josh supports Leandra, a homeless 19-year-old in Mobile, AL (two children living with godparents):
     emergency housing, GED program, bus pass, IDs/name-change paperwork, and an abandoned-property housing
@@ -168,8 +181,10 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner
 - id: chat-mom-boston
   claim: Josh's mom appears to be in the Boston area (he looked for play tickets for her there, May 2026)
     — an inference, not stated outright
@@ -189,8 +204,10 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner
 - id: chat-osmio-collaborators
   claim: 'Josh''s Osmio circle: founder Wes Kussmaul; Kevin (nDgoRose, undecillion.com) exploring Utah
     SB0260/SB0275 endorsement; Anto Jose (lead engineer for Wes); Dan, Husnain, and Marija working Alliance
@@ -212,8 +229,10 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner
 - id: chat-sister-dallas
   claim: Josh has a sister, located in the Dallas area as of July 2026
   method: asserted
@@ -225,6 +244,7 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
 - id: chat-umanitek-application
   claim: Josh worked on an application for a DevOps engineer role at Umanitek (umanitek.ai, Jan 2026),
     an org he'd followed since Nov 2025, while at Insperity; whether it was submitted is not evidenced
@@ -244,8 +264,10 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner
 - id: chat-wedding-officiant
   claim: A friend asked Josh to officiate their wedding (Feb 2025) and he drafted a cosmic-wonder-themed
     ceremony script (May 2025); whether he officiated is not evidenced
@@ -265,8 +287,10 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner
 - id: chat-wes-kussmaul
   claim: Wes Kussmaul is Osmio's founder; Josh works directly with him on communications and positioning
     (ad-hoc 'digital office' drop-ins, email; Authentiverse/authenticity enterprises live inside Osmio)
@@ -279,3 +303,4 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner

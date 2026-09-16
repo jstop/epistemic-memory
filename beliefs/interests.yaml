@@ -15,6 +15,7 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
 - id: chat-intentional-communities
   claim: Josh is interested in intentional-living / sovereignty-oriented communities (Venus Project etc.)
     and has looked into short stays at ones along his route
@@ -27,6 +28,7 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
 - id: chat-jewish-practice
   claim: Josh engages with Jewish religious life while traveling — seeking Shabbat services to attend,
     studying texts, tradition, and Hebrew
@@ -39,6 +41,7 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
 - id: chat-jonathan-sacks-influence
   claim: 'Rabbi Jonathan Sacks is a significant intellectual influence on Josh: he read Sacks''s Morality
     and felt real grief on learning Sacks died in 2020, calling him ''closer than most to the way'''
@@ -51,6 +54,7 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
 - id: chat-mideast-history-study
   claim: Josh studies Israel-Palestine history and early Islamic history in depth through extended AI
     conversations
@@ -63,6 +67,7 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
 - id: chat-reading-canon
   claim: 'Josh''s intellectual canon (2025-26): Axelrod''s The Evolution of Cooperation, Ostrom''s commons
     governance, The Sovereign Individual, Balaji''s The Network State, Game B / Schmachtenberger''s ''war
@@ -87,8 +92,10 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner
 - id: chat-scuba
   claim: Josh scuba dives (previously certified; looked into a refresher course in Key Largo, May 2026)
   method: asserted
@@ -100,6 +107,7 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
 - id: chat-slam-poetry
   claim: 'Josh writes slam poetry (intensive phase June 2026: Jewish identity, inherited trauma, decolonization
     themes) and sought comedy/poetry open mics on the road; performing poetry on stage is not evidenced'
@@ -119,8 +127,10 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner
 - id: chat-society-library
   claim: Josh drafted a volunteer application to The Society Library (Dec 2025) after discovering their
     debate-mapping program; whether it was submitted is not evidenced
@@ -140,8 +150,10 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner
 - id: chat-standup-open-mics
   claim: 'Josh does stand-up comedy: working on material by mid-2024 (promoting an all-arts open mic at
     Filomena coffee shop Aug 2024, sets in progress Sep 2024), deliberate study through 2025 (Comedy Bible
@@ -167,7 +179,10 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner

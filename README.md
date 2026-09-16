@@ -43,7 +43,8 @@ owns memory; they all borrow it through the MCP server.
 - `server.py` — MCP server (stdio): `memory_recall / capture / verify / reconcile /
   health / reindex / why / reconcile_pass / reconcile_apply / ingest_pass / ingest_apply`
 - `ingest.py` — stream ingestion: stage unseen stream items as snapshotted evidence
-  (registering evidence IS the cursor — incremental, replay-safe, no state file), an
+  (registered URI/content-digest pairs ARE the cursor — changed conversations get new
+  snapshots; unchanged versions are skipped, including after replay), an
   LLM/human extracts beliefs from staged items, apply captures them grounded in their
   source. First adapter: Claude chat-history export. An item may yield zero beliefs;
   its snapshot is preserved either way.
@@ -83,3 +84,57 @@ python server.py                 # MCP stdio server
 
 Design lineage: `~/.claude/plans/i-don-t-think-we-re-recursive-blossom.md`.
 Phase next: remote endpoint for claude.ai / ChatGPT connectors; silo import.
+
+## Authorship: who is writing
+
+Who wrote an event is a property of the **channel** that opened the log, never of a
+field in a request. `CanonicalLog(..., actor=)` is opened *as* a principal and no write
+method accepts an actor; the engine resolves the principal once per process:
+
+- `server.py` (the MCP door) declares itself `agent:<EPISTEMIC_AGENT>` at import
+  (`agent:unknown` if unset; never `owner`, whatever the env says). Everything an AI
+  surface writes is attributed to that agent.
+- a non-interactive process (a script, an agent's shell tool) is `agent:cli`, or the
+  non-owner name in `EPISTEMIC_ACTOR` (tests use `test:fixture`).
+- only an interactive terminal resolves to `owner`. `python engine.py whoami` shows
+  what the current channel writes as.
+
+Every belief carries `authorship`: `composed_by` (who wrote the claim text as it now
+stands), `recorded_as` (the raw actor column), `corrected`, and `stood_behind_by`
+(`owner` only when the owner wrote or restated it from their own channel). Stance says
+whether to rely on a claim; authorship says whose claim it is. A belief the owner has not
+stood behind is a draft in the owner's record and must not be presented as the owner's
+word. `memory_health` reports the census: beliefs by composer, how many the owner stands
+behind, events by recorded actor, and any corrections.
+
+**Misattributed history is corrected by appending, never by rewriting.** Before this
+rule every write path defaulted to `owner`, so every agent capture was recorded as the
+owner speaking. The owner states that from their own terminal:
+
+```bash
+python engine.py correct-attribution --through <seq> --recorded owner \
+    --actual agent:claude-code --reason "captured via MCP before actors were channel-derived"
+```
+
+This appends one `AttributionCorrected` event (owner channel only — a correction of who
+spoke is itself speech); attribution of the covered events is re-projected on read, the raw
+column and the hash chain are untouched, and replay reproduces the same result.
+
+This does not resist forgery — an in-process caller can declare any channel. It resists
+the failure that actually happens: a machine filling the owner's slot because the default
+let it. What is still missing is ratification: an owner act, bound to a claim's exact
+text, that the composing system cannot perform on the owner's behalf.
+
+## Reliance and verification behavior
+
+Unsupported observations and derivations are retained but marked SUSPECT; inferred
+claims remain HYPOTHESIS. No unsupported belief receives silent-reliance guidance.
+Write responses and recalls both evaluate dependencies from canonical history;
+unsupported premises and failed premise checks also prevent reliance on dependents.
+
+Verification preserves the caller's requested verdict separately from command
+execution status. Nonzero exits and timeouts record a `failed` verification with
+output and execution details, without updating the verification date or asserting
+that the claim is false. A later successful verification clears this failure state.
+Successful execution alone does not establish truth: the caller still judges the
+output. Existing events remain unchanged and replay remains backward compatible.

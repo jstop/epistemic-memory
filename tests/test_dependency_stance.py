@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import engine  # noqa: E402
 
-ENV_KEYS = ("EPISTEMIC_DB_PATH", "EPISTEMIC_CONTENT_DIR", "EPISTEMIC_BELIEFS_DIR",
+ENV_KEYS = ("EPISTEMIC_ACTOR", "EPISTEMIC_DB_PATH", "EPISTEMIC_CONTENT_DIR", "EPISTEMIC_BELIEFS_DIR",
             "EPISTEMIC_EVENTS_JSONL", "EPISTEMIC_INDEX_PATH")
 
 
@@ -24,6 +24,7 @@ class DependencyStanceTest(unittest.TestCase):
         root = Path(self.tmp.name)
         self._saved = {k: os.environ.get(k) for k in ENV_KEYS}
         os.environ["EPISTEMIC_DB_PATH"] = str(root / "canonical.db")
+        os.environ["EPISTEMIC_ACTOR"] = "test:fixture"
         os.environ["EPISTEMIC_CONTENT_DIR"] = str(root / "evidence_store")
         os.environ["EPISTEMIC_BELIEFS_DIR"] = str(root / "beliefs")
         os.environ["EPISTEMIC_EVENTS_JSONL"] = str(root / "events.jsonl")
@@ -81,6 +82,30 @@ class DependencyStanceTest(unittest.TestCase):
         self.assertEqual(s["stance"], "SUSPECT")
         self.assertIn("premise degraded: b-plan", s["degraded_reason"])
         self.assertIn("premise contested: b-api", s["degraded_reason"])
+
+    def test_write_responses_match_dependency_aware_reads(self):
+        engine.get_log().record_contradiction("b-api", "b-api", note="broken")
+        captured = engine.capture({"id": "b-new", "claim": "New conclusion",
+                                   "method": "derived", "volatility": "historical"},
+                                  premise_ids=["b-api"])
+        self.assertEqual(captured["stance"], "SUSPECT")
+        for out in (captured,
+                    engine.record_verification("b-new", "verified", note="owner judgment"),
+                    engine.reconcile("b-new", "Restated conclusion", note="clarification"),
+                    engine.set_visibility("b-new", False, note="private")):
+            self.assertEqual(out["stance"], self._stamp("b-new")["stance"])
+            self.assertEqual(out["degraded_reason"], "premise contested: b-api")
+
+    def test_unsupported_and_failed_verification_premises_degrade_dependents(self):
+        engine.capture({"id": "b-unsupported", "claim": "No evidence", "method": "observed",
+                        "volatility": "historical"})
+        out = engine.capture({"id": "b-child", "claim": "Conclusion", "method": "derived",
+                              "volatility": "historical"}, premise_ids=["b-unsupported"])
+        self.assertEqual(out["stance"], "SUSPECT")
+        engine.get_log().record_verification("b-api", "failed", output="failure",
+                                            execution={"returncode": 1, "timed_out": False})
+        self.assertEqual(self._stamp("b-plan")["stance"], "SUSPECT")
+        self.assertEqual(self._stamp("b-plan")["degraded_reason"], "premise verification failed: b-api")
 
     def test_cycles_are_safe(self):
         engine.get_log().record_relationship("b-api", "DEPENDS_ON", "b-plan",

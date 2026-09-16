@@ -15,6 +15,7 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
 - id: chat-2026-gulf-leg
   claim: The June 2026 leg of Josh's road trip ran Florida -> Mobile AL (visiting the friend he supports)
     -> New Orleans -> Houston, performing open-mic sets along the way (e.g. Sportsdrink, New Orleans)
@@ -27,6 +28,7 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
 - id: chat-2026-texas-leg
   claim: In July 2026 Josh traveled through Texas (Fort Worth, Waco, Austin, San Antonio, Garland/Dallas)
     before heading northeast via Little Rock and Chattanooga
@@ -39,6 +41,7 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
 - id: chat-florida-residency-end
   claim: Josh's Florida apartment ended around May-June 2026 (deposit dispute over nail holes in July;
     Airbnb-hopping in South Florida through late May); his car registration and VA care remained Florida-based
@@ -58,8 +61,10 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
   - at: '2026-09-10'
     op: BeliefRestated
+    actor: owner
 - id: chat-model3-carliving
   claim: 'Josh is outfitting his Model 3 for car living: electric-only cooking and water systems, currently
     evaluating a power station'
@@ -75,6 +80,7 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
 - id: chat-nomadic-lifestyle
   claim: 'Josh is nomadic: he gave up his Florida apartment (~Aug 2026) and lives/travels out of his Tesla
     Model 3'
@@ -90,6 +96,7 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner
 - id: chat-tesla-model3
   claim: Josh drives a Tesla Model 3
   method: asserted
@@ -101,3 +108,4 @@ beliefs:
   events:
   - at: '2026-09-10'
     op: BeliefFormed
+    actor: owner

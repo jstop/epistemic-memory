@@ -21,7 +21,7 @@ class SubstrateTest(unittest.TestCase):
     def setUp(self):
         self.tmp = TemporaryDirectory()
         root = Path(self.tmp.name)
-        self.log = CanonicalLog(root / "canonical.db", root / "evidence")
+        self.log = CanonicalLog(root / "canonical.db", root / "evidence", actor="test:fixture")
 
     def tearDown(self):
         self.log.close()
