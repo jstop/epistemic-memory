@@ -2,6 +2,7 @@
 evidence, literal author derived from the message sender. Interpretations
 are derived objects: grounded, attributed to an interpreter, supersedable,
 never beliefs. What a span means is not recorded in the substrate."""
+import json
 import os
 import sys
 import unittest
@@ -216,3 +217,77 @@ class BuildGateTest(GroundingTest):
         self.assertTrue(report["ok"], report)
         self.assertEqual(report["soft"]["anchors"]["verified"], 1)
         self.assertEqual(report["hard"]["evidence_content_present"], True)
+
+
+class RecallImportTest(GroundingTest):
+    """recall folds into a dev branch as interpretations; never into main."""
+
+    def _fake_recall(self, path):
+        import sqlite3
+        con = sqlite3.connect(path)
+        con.executescript("""
+        create table source_record(id integer primary key, source_type text, external_id text,
+            content_hash text, content text, content_summary text, created_at text, ingested_at text,
+            ingesting_conversation_uuid text, metadata text);
+        create table derivation_edge(id integer primary key, claim_text text, claim_hash text,
+            source_record_id integer, edge_type text, recorded_by text, recorded_at text,
+            conversation_uuid text, context text, notes text);
+        create table attestations(id integer primary key, target_type text, target_uuid text,
+            verdict text, claim_text text, notes text, attested_at text, attested_by text);
+        create table messages(uuid text primary key, conversation_uuid text, sender text, text text,
+            created_at text, sequence integer);
+        insert into source_record values (1,'document','doi:1','h1','Ostrom (1990), Governing the Commons.','Ostrom','2026-04-20','2026-04-20',null,null);
+        insert into source_record values (2,'tool_use','x','h2','tool noise','','2026-04-20','2026-04-20',null,null);
+        insert into derivation_edge values (1,'Commons can be governed without a central authority.','c1',1,'paraphrase','claude','2026-04-20T10:00:00','','ctx','');
+        insert into derivation_edge values (2,'Josh coined the Voluntary Polity Stack.','c2',null,'pattern_match','claude','2026-04-20T10:01:00','','','unsourced');
+        insert into messages values ('m1','conv-1','assistant','I attributed the Bitcoin analogy to Josh.','2026-03-01',3);
+        insert into attestations values (1,'message','m1','flagged','Attribution may be mine, not Josh''s','check it','2026-04-20T23:59:00','claude');
+        insert into attestations values (2,'message','m1','refuted','Josh never said that','','2026-04-21T09:00:00','self');
+        """)
+        con.commit(); con.close()
+
+    def test_refuses_main(self):
+        import recall_import, tempfile
+        with tempfile.TemporaryDirectory() as d:
+            db = os.path.join(d, "recall.db"); self._fake_recall(db)
+            os.environ.pop("EPISTEMIC_BRANCH", None)
+            with self.assertRaises(SystemExit):
+                recall_import.run(db)
+
+    def test_imports_as_grounded_interpretations_and_is_idempotent(self):
+        import recall_import, tempfile
+        log = engine.get_log()
+        # a library transcript of conv-1 so the attestation gets a second grounding
+        log.register_evidence(media_type="application/json", uri="claude-export://conversation/conv-1",
+                              content=json.dumps({"uuid": "conv-1", "messages": [
+                                  {"role": "human", "text": "hi"},
+                                  {"role": "assistant", "text": "I attributed the Bitcoin analogy to Josh."}]}))
+        with tempfile.TemporaryDirectory() as d:
+            db = os.path.join(d, "recall.db"); self._fake_recall(db)
+            os.environ["EPISTEMIC_BRANCH"] = "dev"
+            # dev branch paths are overridden by the test env (explicit EPISTEMIC_*_PATH win)
+            try:
+                r = recall_import.run(db)
+                st = log.state()
+                self.assertEqual(r["counts"], {"edges": 2, "attestations": 2, "sources": 1, "attested_messages": 1})
+                self.assertEqual(r["interpretations"]["derivations"], {"new": 2, "sourced": 1, "orphans": 1})
+                self.assertEqual(r["interpretations"]["attestations"], {"new": 2, "also_in_transcript": 2})
+                self.assertEqual(len(r["human_acts"]), 1)
+                kinds = sorted(i["kind"] for i in st["interpretations"].values())
+                self.assertEqual(kinds, ["recall-attestation/flagged", "recall-attestation/refuted",
+                                         "recall-derivation/paraphrase", "recall-derivation/pattern_match"])
+                orphan = next(i for i in st["interpretations"].values() if i["kind"].endswith("pattern_match"))
+                self.assertTrue(orphan["metadata"]["orphan"]); self.assertEqual(len(orphan["grounding"]), 1)
+                sourced = next(i for i in st["interpretations"].values() if i["kind"].endswith("paraphrase"))
+                self.assertEqual(len(sourced["grounding"]), 2)
+                refuted = next(i for i in st["interpretations"].values() if i["kind"].endswith("refuted"))
+                self.assertTrue(refuted["metadata"]["human_act"])
+                self.assertEqual([g["message"] for g in refuted["grounding"] if g.get("message") is not None], [1])
+                self.assertEqual(st["runs"][r["run_id"]]["kind"], "import-recall")
+                self.assertFalse(st["beliefs"])  # nothing promoted to a belief
+                r2 = recall_import.run(db)
+                self.assertEqual(r2["skipped"], {"edges": 2, "attestations": 2})
+                self.assertEqual(r2["interpretations"]["derivations"]["new"], 0)
+                self.assertTrue(log.verify_chain())
+            finally:
+                os.environ.pop("EPISTEMIC_BRANCH", None)

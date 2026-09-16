@@ -128,6 +128,30 @@ beliefs:
   - at: '2026-09-10'
     op: BeliefFormed
     actor: migration:yaml-import
+- id: epist-source-archive
+  claim: 'The epistemic pipeline''s source material is archived to the private, versioned, encrypted S3
+    bucket epistemic-sources-523888557587 (us-east-1, Josh''s AWS account) by workspaces-backup/archive-sources.sh:
+    every Claude data export by date (2025-07-14, 2025-07-24, 2025-08-18, 2026-03-02, 2026-04-20), recall.db
+    (holds human attestations), ~/.claude/projects transcripts, and a derived copy of the library build;
+    it runs daily at 21:30 via launchd com.jstop.epistemic-archive and commits a manifest (sources/MANIFEST.tsv)
+    to jstop/epistemic-workspaces'
+  method: observed
+  volatility: structural
+  cluster: Epistemic tooling layout
+  anchor: aws s3api head-bucket --bucket epistemic-sources-523888557587 && aws s3api get-bucket-versioning
+    --bucket epistemic-sources-523888557587 | grep -q Enabled
+  anchor_cost: cheap
+  observed_at: '2026-09-16'
+  contested: false
+  unsupported: false
+  links:
+  - epist-backup-repo
+  - episteme-roles-decided
+  - library-unvalidated-test-status
+  events:
+  - at: '2026-09-16'
+    op: BeliefFormed
+    actor: agent:unknown
 - id: epist-stale-dup-pending
   claim: A stale duplicate ~/workspace/Claude_Desktop/epistemics/ is held pending user-approved deletion
   method: observed
