@@ -4,7 +4,11 @@
 generated: true
 beliefs:
 - id: epist-backup-repo
-  claim: Workspaces are backed up in private repo jstop/epistemic-workspaces (~/workspace/epistemic/workspaces-backup)
+  claim: 'Workspaces are backed up off-machine to the private repo jstop/epistemic-workspaces (local clone
+    ~/workspace/epistemic/workspaces-backup): backup.sh in that repo bundles each workspace''s full git
+    history and rsyncs a working-tree snapshot, commits and pushes; it runs via launchd (com.jstop.epistemic-backup,
+    09:15 and 21:15 daily) and by `make backup` in the workbench; log at ~/Library/Logs/epistemic-backup.log;
+    `--with-library` opt-in copies the living library too'
   method: observed
   volatility: structural
   cluster: Epistemic tooling layout
@@ -16,10 +20,22 @@ beliefs:
   links:
   - epist-location
   reconstructed: true
+  claim_history:
+  - at: '2026-09-10'
+    claim: Workspaces are backed up in private repo jstop/epistemic-workspaces (~/workspace/epistemic/workspaces-backup)
+  - at: '2026-09-16'
+    claim: 'Workspaces are backed up off-machine to the private repo jstop/epistemic-workspaces (local
+      clone ~/workspace/epistemic/workspaces-backup): backup.sh in that repo bundles each workspace''s
+      full git history and rsyncs a working-tree snapshot, commits and pushes; it runs via launchd (com.jstop.epistemic-backup,
+      09:15 and 21:15 daily) and by `make backup` in the workbench; log at ~/Library/Logs/epistemic-backup.log;
+      `--with-library` opt-in copies the living library too'
   events:
   - at: '2026-09-10'
     op: BeliefFormed
     actor: migration:yaml-import
+  - at: '2026-09-16'
+    op: BeliefRestated
+    actor: agent:unknown
 - id: epist-consolidation-date
   claim: The epistemic-tooling consolidation happened on 2026-06-07
   method: observed

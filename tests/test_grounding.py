@@ -189,3 +189,30 @@ class RunIdentityTest(GroundingTest):
         self.assertEqual([r["run_id"] for r in runs], [rid])
         self.assertEqual(runs[0]["inputs"], [eid])
         self.assertEqual(runs[0]["actor"], "test:fixture")
+
+
+class BuildGateTest(GroundingTest):
+    def test_rebuild_into_branch_and_check(self):
+        import tempfile
+        log = engine.get_log()
+        eid = log.register_evidence(media_type="text/plain", content="the sky is blue, verbatim")
+        log.form_belief(belief_id="b1", claim="the sky is blue", method="asserted",
+                        volatility="structural", evidence_ids=[eid], anchor="true", anchor_cost="cheap")
+        with tempfile.TemporaryDirectory() as builds:
+            os.environ["EPISTEMIC_BUILDS_DIR"] = builds
+            try:
+                with self.assertRaises(ValueError):
+                    engine.rebuild("main")
+                out = engine.rebuild("dev")
+                self.assertTrue(out["state_identical"] and out["chain_ok"])
+                self.assertTrue(os.path.islink(os.path.join(builds, "dev", "evidence_store")))
+                self.assertTrue(os.path.exists(os.path.join(builds, "dev", "canonical.db")))
+                self.assertTrue(out["projections"] and out["index"])
+                self.assertTrue(os.path.exists(os.path.join(builds, "dev", "MEMORY.md")))
+            finally:
+                os.environ.pop("EPISTEMIC_BUILDS_DIR", None)
+        engine.regenerate_projections()  # a build's projections are part of the build
+        report = engine.check(run_anchors=True)
+        self.assertTrue(report["ok"], report)
+        self.assertEqual(report["soft"]["anchors"]["verified"], 1)
+        self.assertEqual(report["hard"]["evidence_content_present"], True)

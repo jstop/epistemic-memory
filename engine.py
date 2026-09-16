@@ -54,27 +54,64 @@ def _env(name: str, default: str) -> str:
     return os.environ.get(name, default)
 
 
+# ------------------------------------------------------------- branches
+#
+# The library is a BUILD ARTIFACT of archived sources × versioned code ×
+# interpreter runs (devops rule, 2026-09-16). `main` is the build the MCP
+# servers serve and whose index lands in ~/.claude. Any other branch lives
+# under builds/<branch>/ with its own log, evidence store, projections and
+# index, so a rebuild or an experiment never touches what is being served.
+# Explicit EPISTEMIC_*_PATH/DIR variables still override (tests use them).
+
+def branch() -> str:
+    return (os.environ.get("EPISTEMIC_BRANCH") or "main").strip()
+
+
+def builds_root() -> str:
+    return _env("EPISTEMIC_BUILDS_DIR", os.path.join(REPO_DIR, "builds"))
+
+
+def build_dir(name: str | None = None) -> str:
+    b = name or branch()
+    return REPO_DIR if b == "main" else os.path.join(builds_root(), b)
+
+
 def db_path() -> str:
-    return _env("EPISTEMIC_DB_PATH", os.path.join(REPO_DIR, "canonical.db"))
+    return _env("EPISTEMIC_DB_PATH", os.path.join(build_dir(), "canonical.db"))
 
 
 def content_dir() -> str:
-    return _env("EPISTEMIC_CONTENT_DIR", os.path.join(REPO_DIR, "evidence_store"))
+    return _env("EPISTEMIC_CONTENT_DIR", os.path.join(build_dir(), "evidence_store"))
 
 
 def beliefs_dir() -> str:
-    return _env("EPISTEMIC_BELIEFS_DIR", os.path.join(REPO_DIR, "beliefs"))
+    return _env("EPISTEMIC_BELIEFS_DIR", os.path.join(build_dir(), "beliefs"))
 
 
 def events_jsonl_path() -> str:
-    return _env("EPISTEMIC_EVENTS_JSONL", os.path.join(REPO_DIR, "events.jsonl"))
+    return _env("EPISTEMIC_EVENTS_JSONL", os.path.join(build_dir(), "events.jsonl"))
 
 
 def index_path() -> str:
+    if branch() != "main":
+        return _env("EPISTEMIC_INDEX_PATH", os.path.join(build_dir(), "MEMORY.md"))
     return _env(
         "EPISTEMIC_INDEX_PATH",
         os.path.join(os.path.expanduser("~"), ".claude", "projects", "-Users-jstein", "memory", "MEMORY.md"),
     )
+
+
+def code_version() -> str:
+    """The library code's git revision, for run identity and build records."""
+    try:
+        import subprocess
+        sha = subprocess.run(["git", "-C", REPO_DIR, "rev-parse", "--short=12", "HEAD"],
+                             capture_output=True, text=True, timeout=5).stdout.strip()
+        dirty = subprocess.run(["git", "-C", REPO_DIR, "status", "--porcelain"],
+                               capture_output=True, text=True, timeout=5).stdout.strip() != ""
+        return f"{sha}{'+dirty' if dirty else ''}" if sha else "unknown"
+    except Exception:
+        return "unknown"
 
 
 # ------------------------------------------------------------------ actor
@@ -513,7 +550,12 @@ def record_run(*, kind: str, interpreter: str, inputs: list[str] | None = None,
                outputs: list[dict] | None = None, params: dict | None = None,
                note: str = "", run_id: str | None = None,
                started_at: str | None = None) -> str:
-    """Record an interpreter run (run identity). Returns the run id."""
+    """Record an interpreter run (run identity). Returns the run id. The
+    library code revision is stamped into params so a run can be reproduced
+    against the code that made it."""
+    params = dict(params or {})
+    params.setdefault("library_code", code_version())
+    params.setdefault("branch", branch())
     return get_log().record_run(kind=kind, interpreter=interpreter, inputs=inputs,
                                 outputs=outputs, params=params, note=note,
                                 run_id=run_id, started_at=started_at)
@@ -782,6 +824,108 @@ def write_index() -> str:
 
 # ------------------------------------------------------------------ CLI
 
+# ------------------------------------------------------------ build / check
+#
+# A data pipeline has a build and a gate. `rebuild` reconstructs a branch from
+# canonical events alone (deterministic: same events, same state, chain
+# verified while importing) and regenerates its projections. `check` is the
+# gate a branch must pass before it is promoted to main: chain intact, replay
+# reproduces the state, projections match, anchors run (cheap ones), and the
+# authorship census is reported so misattribution is visible, never silent.
+
+def rebuild(into_branch: str, source_db: str | None = None) -> dict:
+    """Rebuild branch `into_branch` from the events of `source_db` (default:
+    the current branch's db). Never touches main: refusing to rebuild into it."""
+    if into_branch == "main":
+        raise ValueError("refusing to rebuild into main; rebuild into a branch, check it, then promote")
+    src = CanonicalLog(source_db or db_path(), content_dir(), actor=resolve_actor())
+    target_dir = build_dir(into_branch)
+    os.makedirs(target_dir, exist_ok=True)
+    target_db = os.path.join(target_dir, "canonical.db")
+    rebuilt = src.replay_into(target_db)
+    same = rebuilt.state() == src.state()
+    # The evidence store is content-addressed and append-only, so a branch
+    # shares it by symlink rather than copying 37 MB per build: a branch that
+    # registers new evidence adds objects main does not reference, never
+    # overwrites one.
+    store_link = os.path.join(target_dir, "evidence_store")
+    if os.path.islink(store_link) or not os.path.exists(store_link):
+        if os.path.islink(store_link):
+            os.unlink(store_link)
+        os.symlink(os.path.abspath(content_dir()), store_link)
+    elif os.path.isdir(store_link) and not os.listdir(store_link):
+        os.rmdir(store_link)
+        os.symlink(os.path.abspath(content_dir()), store_link)
+    # projections for the branch, without disturbing this process's paths
+    env = {"EPISTEMIC_BRANCH": into_branch, "EPISTEMIC_BUILDS_DIR": builds_root(),
+           "EPISTEMIC_ACTOR": os.environ.get("EPISTEMIC_ACTOR", "")}
+    for k in ("EPISTEMIC_DB_PATH", "EPISTEMIC_CONTENT_DIR", "EPISTEMIC_BELIEFS_DIR",
+              "EPISTEMIC_EVENTS_JSONL", "EPISTEMIC_INDEX_PATH"):
+        env[k] = ""
+    import subprocess, sys as _sys
+    proj = subprocess.run([_sys.executable, os.path.join(REPO_DIR, "engine.py"), "project"],
+                          env={**{k: v for k, v in os.environ.items() if not k.startswith("EPISTEMIC_")}, **{k: v for k, v in env.items() if v}},
+                          capture_output=True, text=True, cwd=REPO_DIR)
+    idx = subprocess.run([_sys.executable, os.path.join(REPO_DIR, "engine.py"), "stamp", "--write-index"],
+                         env={**{k: v for k, v in os.environ.items() if not k.startswith("EPISTEMIC_")}, **{k: v for k, v in env.items() if v}},
+                         capture_output=True, text=True, cwd=REPO_DIR)
+    return {"branch": into_branch, "build_dir": target_dir, "events": len(rebuilt.events()),
+            "state_identical": same, "chain_ok": rebuilt.verify_chain(),
+            "evidence_store": content_dir(), "code": code_version(),
+            "projections": proj.returncode == 0, "index": idx.returncode == 0,
+            "note": "evidence store is shared with the source branch (content-addressed, append-only)"}
+
+
+def check(run_anchors: bool = True, anchor_cost: str = "cheap") -> dict:
+    """The promotion gate. Returns a report; `ok` is False if any hard check fails."""
+    import tempfile
+    log = get_log()
+    report = {"branch": branch(), "db": db_path(), "code": code_version(), "hard": {}, "soft": {}}
+    report["hard"]["chain"] = log.verify_chain()
+    with tempfile.TemporaryDirectory() as d:
+        try:
+            rebuilt = log.replay_into(os.path.join(d, "replay.db"))
+            report["hard"]["replay_reproduces_state"] = rebuilt.state() == log.state()
+            rebuilt.close()
+        except Exception as e:
+            report["hard"]["replay_reproduces_state"] = False
+            report["hard"]["replay_error"] = str(e)
+    drift = projection_drift()
+    report["hard"]["projections_match"] = not drift
+    if drift:
+        report["hard"]["projection_drift"] = drift[:10]
+    # evidence content present for every snapshotted evidence
+    state = log.state()
+    missing = [eid for eid, e in state["evidence"].items()
+               if e.get("durability") == "SNAPSHOTTED" and not log.store.has(e.get("digest") or "")]
+    report["hard"]["evidence_content_present"] = not missing
+    if missing:
+        report["hard"]["missing_evidence"] = missing[:10]
+    # soft: anchors, unsupported beliefs, authorship census
+    views = [v for v, _ in load_all()]
+    if run_anchors:
+        results = {"verified": 0, "failed": 0, "skipped": 0, "failures": []}
+        for v in views:
+            if not v.get("anchor") or (anchor_cost == "cheap" and (v.get("anchor_cost") or "cheap") != "cheap"):
+                results["skipped"] += 1
+                continue
+            observed, meta = _execute_anchor(v["anchor"])
+            if meta.get("returncode") == 0 and not meta.get("timed_out"):
+                results["verified"] += 1
+            else:
+                results["failed"] += 1
+                results["failures"].append({"id": v["id"], "exit": meta.get("returncode"),
+                                            "timed_out": meta.get("timed_out"),
+                                            "observed": (observed or "")[:160]})
+        report["soft"]["anchors"] = results
+    report["soft"]["unsupported_beliefs"] = [v["id"] for v in views if v.get("unsupported")]
+    report["soft"]["contested_beliefs"] = [v["id"] for v in views if v.get("contested")]
+    report["soft"]["authorship"] = authorship_census()
+    report["ok"] = all(bool(x) for k, x in report["hard"].items()
+                       if k in ("chain", "replay_reproduces_state", "projections_match", "evidence_content_present"))
+    return report
+
+
 def main() -> int:
     import argparse
     import json as _json
@@ -802,7 +946,22 @@ def main() -> int:
     ca.add_argument("--recorded", required=True, help="actor as the column says (e.g. owner)")
     ca.add_argument("--actual", required=True, help="who actually wrote them (e.g. agent:claude-code)")
     ca.add_argument("--reason", required=True)
+    rb = sub.add_parser("rebuild", help="rebuild a branch from canonical events (never main)")
+    rb.add_argument("--branch", required=True)
+    rb.add_argument("--from-db", default=None, help="source canonical.db (default: current branch)")
+    ck = sub.add_parser("check", help="the promotion gate: chain, replay, projections, evidence, anchors")
+    ck.add_argument("--no-anchors", action="store_true")
+    ck.add_argument("--anchor-cost", default="cheap", choices=["cheap", "all"])
     args = p.parse_args()
+
+    if args.cmd == "rebuild":
+        out = rebuild(args.branch, args.from_db)
+        print(_json.dumps(out, indent=2))
+        return 0 if (out["state_identical"] and out["chain_ok"]) else 1
+    if args.cmd == "check":
+        out = check(run_anchors=not args.no_anchors, anchor_cost=args.anchor_cost)
+        print(_json.dumps(out, indent=2, default=str))
+        return 0 if out["ok"] else 1
 
     if args.cmd == "whoami":
         print(resolve_actor())
