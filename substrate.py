@@ -27,6 +27,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
+import threading
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -169,7 +170,11 @@ class CanonicalLog:
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self.store = EvidenceStore(content_dir)
-        self.conn = sqlite3.connect(str(self.db_path))
+        # One connection, usable from any thread; every read and write goes through
+        # self._lock, so callers on different threads (an MCP server, the
+        # workbench bridge's executor) serialise rather than corrupt.
+        self.conn = sqlite3.connect(str(self.db_path), check_same_thread=False)
+        self._lock = threading.RLock()
         self.conn.row_factory = sqlite3.Row
         self.conn.executescript(_SCHEMA)
         self.conn.commit()
@@ -758,6 +763,10 @@ class CanonicalLog:
     # ------------------------------------------------------ log fundamentals
 
     def events(self) -> list[dict]:
+        with self._lock:
+            return self._events_locked()
+
+    def _events_locked(self) -> list[dict]:
         rows = self.conn.execute("SELECT * FROM events ORDER BY sequence").fetchall()
         return [{
             "sequence": r["sequence"], "event_id": r["event_id"],
@@ -819,6 +828,10 @@ class CanonicalLog:
 
     def _append(self, event_type: str, payload: dict) -> str:
         assert event_type in EVENT_TYPES
+        with self._lock:
+            return self._append_locked(event_type, payload)
+
+    def _append_locked(self, event_type: str, payload: dict) -> str:
         actor = self.actor
         try:
             # Acquire the write lock before reading the chain head.

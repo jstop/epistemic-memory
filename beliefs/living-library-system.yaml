@@ -3,6 +3,27 @@
 # the engine CLI, then regenerate with: python engine.py project
 generated: true
 beliefs:
+- id: epist-recall-folded-dev
+  claim: 'As of 2026-09-16 recall is folded into the living library''s dev branch only (builds/dev) by
+    memory/recall_import.py: 104 derivation edges and 28 attestations become grounded interpretations,
+    recall.db is referenced evidence; main is untouched, the recall MCP server stays in Claude Desktop,
+    and promotion awaits Josh'
+  method: observed
+  volatility: status
+  cluster: Living library system
+  anchor: test -f ~/workspace/epistemic/memory/builds/dev/canonical.db && test -f ~/workspace/epistemic/memory/recall_import.py
+  anchor_cost: cheap
+  observed_at: '2026-09-16'
+  contested: false
+  unsupported: false
+  links:
+  - epist-source-archive
+  - episteme-roles-decided
+  - library-unvalidated-test-status
+  events:
+  - at: '2026-09-16'
+    op: BeliefFormed
+    actor: agent:unknown
 - id: library-design-doc
   claim: 'The Episteme design lineage / pipeline plan is ~/.claude/plans/robust-dazzling-avalanche.md
     (the previously recorded path i-don-t-think-we-re-recursive-blossom.md does not exist); the layer
