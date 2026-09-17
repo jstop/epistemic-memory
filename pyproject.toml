@@ -1,0 +1,15 @@
+[project]
+name = "epistemic-memory"
+version = "2026.9.17"
+description = "The living library: canonical event substrate, beliefs with stance, interpretations, runs, builds and the gate"
+requires-python = ">=3.12"
+dependencies = [
+  "mcp>=1.2",
+  "pyyaml>=6",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

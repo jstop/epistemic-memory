@@ -2,3 +2,5 @@ __pycache__/
 canonical.db
 evidence_store/
 builds/
+beliefs/
+events.jsonl

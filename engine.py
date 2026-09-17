@@ -67,13 +67,25 @@ def branch() -> str:
     return (os.environ.get("EPISTEMIC_BRANCH") or "main").strip()
 
 
+def data_root() -> str:
+    """Where the library's DATA lives: canonical.db, evidence_store, builds/
+    and the projections — never inside the code repo. Resolution order:
+    EPISTEMIC_DATA_DIR; else ../data beside the repo if it exists (the platform
+    layout); else the repo directory (legacy)."""
+    explicit = os.environ.get("EPISTEMIC_DATA_DIR")
+    if explicit:
+        return explicit
+    sibling = os.path.join(os.path.dirname(REPO_DIR), "data")
+    return sibling if os.path.isdir(sibling) else REPO_DIR
+
+
 def builds_root() -> str:
-    return _env("EPISTEMIC_BUILDS_DIR", os.path.join(REPO_DIR, "builds"))
+    return _env("EPISTEMIC_BUILDS_DIR", os.path.join(data_root(), "builds"))
 
 
 def build_dir(name: str | None = None) -> str:
     b = name or branch()
-    return REPO_DIR if b == "main" else os.path.join(builds_root(), b)
+    return data_root() if b == "main" else os.path.join(builds_root(), b)
 
 
 def db_path() -> str:
