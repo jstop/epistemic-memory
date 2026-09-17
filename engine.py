@@ -28,7 +28,7 @@ from pathlib import Path
 
 import yaml
 
-from substrate import METHODS, OWNER, VOLATILITIES, CanonicalLog, canonical_json
+from substrate import METHODS, OWNER, VOLATILITIES, CanonicalLog, canonical_json, now_iso
 
 REPO_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -892,6 +892,86 @@ def rebuild(into_branch: str, source_db: str | None = None) -> dict:
             "note": "evidence store is shared with the source branch (content-addressed, append-only)"}
 
 
+def main_db_path() -> str:
+    """Where main's database is. Honours EPISTEMIC_DB_PATH when this process
+    is on main (tests, relocated stores); otherwise the repo's canonical.db."""
+    if branch() == "main":
+        return db_path()
+    return os.path.join(build_dir("main"), "canonical.db")
+
+
+def branches() -> list[dict]:
+    """Every build: main plus builds/<name>/, with event count, last gate and code."""
+    out = []
+    names = ["main"] + sorted(d for d in os.listdir(builds_root()) if os.path.isdir(os.path.join(builds_root(), d)) and not d.startswith("_")) if os.path.isdir(builds_root()) else ["main"]
+    for name in names:
+        db = main_db_path() if name == "main" else os.path.join(build_dir(name), "canonical.db")
+        row = {"name": name, "db": db, "exists": os.path.exists(db), "served": name == branch()}
+        if row["exists"]:
+            try:
+                log = CanonicalLog(db, content_dir(), actor=resolve_actor())
+                st = log.state()
+                gates = sorted((r for r in st["runs"].values() if r.get("kind") == "gate-check"),
+                               key=lambda r: r.get("recorded_at") or "")
+                g = gates[-1] if gates else None
+                row.update(events=len(log.events()), beliefs=len(st["beliefs"]), evidence=len(st["evidence"]),
+                           interpretations=len(st["interpretations"]), runs=len(st["runs"]),
+                           last_gate=({"ok": (g.get("outputs") or [{}])[0].get("ok"), "recorded_at": g.get("recorded_at"),
+                                       "unreviewed": (g.get("params") or {}).get("unreviewed")} if g else None),
+                           last_event_at=(log.events()[-1]["recorded_at"] if log.events() else None))
+                log.close()
+            except Exception as e:  # noqa: BLE001
+                row["error"] = str(e)
+        out.append(row)
+    return out
+
+
+def promote(from_branch: str, require_gate: bool = True) -> dict:
+    """Make a checked branch the served build. Preconditions: the branch exists
+    and (by default) its most recent gate run passed. main's current database
+    is kept under builds/_backups/ before it is replaced; the promotion is
+    recorded as a run in the new main. Refuses to promote main onto itself."""
+    import shutil
+    if from_branch == "main":
+        raise ValueError("promote takes a non-main branch")
+    src_db = os.path.join(build_dir(from_branch), "canonical.db")
+    if not os.path.exists(src_db):
+        raise ValueError(f"no build for branch '{from_branch}'")
+    rows = {b["name"]: b for b in branches()}
+    g = rows[from_branch].get("last_gate")
+    if require_gate and not (g and g.get("ok")):
+        raise ValueError(f"branch '{from_branch}' has no passing gate run; run the gate first")
+    main_db = main_db_path()
+    backups = os.path.join(builds_root(), "_backups")
+    os.makedirs(backups, exist_ok=True)
+    stamp = now_iso().replace(":", "").replace("-", "")[:15]
+    backup = os.path.join(backups, f"main-{stamp}.db")
+    if os.path.exists(main_db):
+        shutil.copy2(main_db, backup)
+    # copy the branch's db into main via sqlite backup for a consistent file
+    import sqlite3
+    src = sqlite3.connect(src_db); dst = sqlite3.connect(main_db + ".promoting")
+    src.backup(dst); src.close(); dst.close()
+    os.replace(main_db + ".promoting", main_db)
+    # projections + index for main, in a subprocess (this process may be on a
+    # branch). Explicit path overrides (tests, relocated stores) are kept; only
+    # the branch selection is dropped so the subprocess is on main.
+    import subprocess, sys as _sys
+    env = {k: v for k, v in os.environ.items() if k not in ("EPISTEMIC_BRANCH",)}
+    env["EPISTEMIC_ACTOR"] = os.environ.get("EPISTEMIC_ACTOR", "")
+    for args in (["project"], ["stamp", "--write-index"]):
+        subprocess.run([_sys.executable, os.path.join(REPO_DIR, "engine.py"), *args],
+                       env={k: v for k, v in env.items() if v}, capture_output=True, text=True, cwd=REPO_DIR)
+    # record the promotion in the new main
+    log = CanonicalLog(main_db, content_dir(), actor=resolve_actor())
+    rid = log.record_run(kind="promote", interpreter=f"engine.promote@{code_version()}",
+                         outputs=[{"type": "build", "id": "main", "from": from_branch}],
+                         params={"from": from_branch, "backup": backup, "gate_run_at": (g or {}).get("recorded_at")},
+                         note=f"branch {from_branch} promoted to main")
+    log.close()
+    return {"ok": True, "from": from_branch, "backup": backup, "run_id": rid}
+
+
 def check(run_anchors: bool = True, anchor_cost: str = "cheap", record: bool = False) -> dict:
     """The promotion gate. Returns a report; `ok` is False if any hard check fails.
     With record=True the outcome is appended as a RunRecorded (kind gate-check),
@@ -985,7 +1065,16 @@ def main() -> int:
     ck.add_argument("--no-anchors", action="store_true")
     ck.add_argument("--anchor-cost", default="cheap", choices=["cheap", "all"])
     ck.add_argument("--record", action="store_true", help="append the outcome to the log as a gate-check run")
+    sub.add_parser("branches", help="every build with its last gate")
+    pm = sub.add_parser("promote", help="make a checked branch the served build (main)")
+    pm.add_argument("--from", dest="from_branch", required=True)
+    pm.add_argument("--skip-gate", action="store_true")
     args = p.parse_args()
+
+    if args.cmd == "branches":
+        print(_json.dumps(branches(), indent=2, default=str)); return 0
+    if args.cmd == "promote":
+        print(_json.dumps(promote(args.from_branch, require_gate=not args.skip_gate), indent=2)); return 0
 
     if args.cmd == "rebuild":
         out = rebuild(args.branch, args.from_db)

@@ -291,3 +291,46 @@ class RecallImportTest(GroundingTest):
                 self.assertTrue(log.verify_chain())
             finally:
                 os.environ.pop("EPISTEMIC_BRANCH", None)
+
+
+class PromoteTest(GroundingTest):
+    def test_branches_and_gated_promote(self):
+        import tempfile, shutil
+        log = engine.get_log()
+        eid = log.register_evidence(media_type="text/plain", content="x")
+        log.form_belief(belief_id="b1", claim="c", method="asserted", volatility="structural", evidence_ids=[eid])
+        engine.regenerate_projections()
+        with tempfile.TemporaryDirectory() as builds:
+            os.environ["EPISTEMIC_BUILDS_DIR"] = builds
+            try:
+                engine.rebuild("dev")
+                rows = {b["name"]: b for b in engine.branches()}
+                self.assertIn("dev", rows); self.assertTrue(rows["dev"]["exists"])
+                self.assertIsNone(rows["dev"]["last_gate"])
+                with self.assertRaises(ValueError):   # no passing gate yet
+                    engine.promote("dev")
+                with self.assertRaises(ValueError):   # never main onto itself
+                    engine.promote("main")
+                # a recorded gate on the dev build (as gate.sh does: subprocess with the branch env)
+                import subprocess, sys as _sys
+                env = {k: v for k, v in os.environ.items()
+                       if k not in ("EPISTEMIC_DB_PATH", "EPISTEMIC_CONTENT_DIR", "EPISTEMIC_BELIEFS_DIR", "EPISTEMIC_EVENTS_JSONL", "EPISTEMIC_INDEX_PATH")}
+                env["EPISTEMIC_BRANCH"] = "dev"
+                r = subprocess.run([_sys.executable, os.path.join(engine.REPO_DIR, "engine.py"), "check", "--record", "--no-anchors"],
+                                   env=env, capture_output=True, text=True, cwd=engine.REPO_DIR)
+                self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+                rows = {b["name"]: b for b in engine.branches()}
+                self.assertTrue(rows["dev"]["last_gate"]["ok"])
+                # add something on dev so promotion is observable
+                dev_log = engine.CanonicalLog(rows["dev"]["db"], engine.content_dir(), actor="test:fixture")
+                dev_log.form_belief(belief_id="b2", claim="only on dev", method="asserted", volatility="structural", evidence_ids=[eid])
+                dev_log.close()
+                out = engine.promote("dev", require_gate=False)
+                self.assertTrue(out["ok"] and os.path.exists(out["backup"]))
+                engine._LOGS.clear()
+                st = engine.get_log().state()
+                self.assertIn("b2", st["beliefs"])
+                self.assertEqual([r["kind"] for r in st["runs"].values()][-1], "promote")
+                self.assertTrue(engine.get_log().verify_chain())
+            finally:
+                os.environ.pop("EPISTEMIC_BUILDS_DIR", None)

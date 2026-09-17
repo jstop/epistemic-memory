@@ -168,6 +168,17 @@ class CanonicalLog:
             raise ValueError("a CanonicalLog must be opened as a named actor")
         self.actor = actor.strip()
         self.db_path = Path(db_path)
+        # Guard (2026-09-17, after a test replaced the real canonical.db): a
+        # test principal may never open the repo's own store or anything
+        # beside it. Tests get temporary paths or they get nothing.
+        if self.actor.startswith("test:"):
+            repo = Path(__file__).resolve().parent
+            try:
+                inside_repo = self.db_path.resolve().is_relative_to(repo)
+            except (OSError, ValueError):
+                inside_repo = False
+            if inside_repo and "builds" not in self.db_path.resolve().parts[len(repo.parts):][:1]:
+                raise RuntimeError(f"refusing to open {self.db_path} as {self.actor}: tests must use a temporary store")
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self.store = EvidenceStore(content_dir)
         # One connection, usable from any thread; every read and write goes through

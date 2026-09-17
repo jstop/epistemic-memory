@@ -232,11 +232,12 @@ beliefs:
     op: BeliefFormed
     actor: migration:yaml-import
 - id: epist-workbench-web-ui
-  claim: 'The epistemic workbench has a React/FastAPI web UI (web/server.py + web/frontend) launched with
-    `make web` from ~/workspace/epistemic/workbench, served at http://127.0.0.1:8111 with ?ws=<name>&tab=<graph|summary|...>
-    deep links; as of 2026-09-16 it is an interpreter over the living library (the substrate): beliefs
-    ground in workspaces via snapshot evidence and a verify-thesis anchor, every generate/extract/curate
-    run is recorded with run identity, and the recall client is removed'
+  claim: 'The epistemic workbench web UI (web/server.py + web/frontend, `make web` at http://127.0.0.1:8111)
+    is organised around the four questions since 2026-09-17: Believe / Argue / Trace / Patterns as top-level
+    views with a status strip (served build, last gate, unreviewed count, writes-as, code revisions);
+    workspaces are the context inside Argue; deep links ?view=… and ?ws=&tab=…; it reads the library branch
+    EPISTEMIC_BRANCH names, beliefs ground in workspaces via snapshot evidence and a verify-thesis anchor,
+    and every generate/extract/curate run is recorded with run identity'
   method: observed
   volatility: structural
   cluster: Epistemic tooling layout
@@ -262,6 +263,13 @@ beliefs:
       deep links; as of 2026-09-16 it is an interpreter over the living library (the substrate): beliefs
       ground in workspaces via snapshot evidence and a verify-thesis anchor, every generate/extract/curate
       run is recorded with run identity, and the recall client is removed'
+  - at: '2026-09-17'
+    claim: 'The epistemic workbench web UI (web/server.py + web/frontend, `make web` at http://127.0.0.1:8111)
+      is organised around the four questions since 2026-09-17: Believe / Argue / Trace / Patterns as top-level
+      views with a status strip (served build, last gate, unreviewed count, writes-as, code revisions);
+      workspaces are the context inside Argue; deep links ?view=… and ?ws=&tab=…; it reads the library
+      branch EPISTEMIC_BRANCH names, beliefs ground in workspaces via snapshot evidence and a verify-thesis
+      anchor, and every generate/extract/curate run is recorded with run identity'
   events:
   - at: '2026-09-16'
     op: BeliefFormed
@@ -269,6 +277,9 @@ beliefs:
   - at: '2026-09-16'
     op: BeliefRestated
     actor: agent:unknown
+  - at: '2026-09-17'
+    op: BeliefRestated
+    actor: agent:cli
 - id: epist-workspaces-count
   claim: There are 40 live research workspaces under ~/workspace/epistemic/workspaces/
   method: observed
