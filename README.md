@@ -58,6 +58,11 @@ owns memory; they all borrow it through the MCP server.
   `~/.claude/projects/-Users-jstein/memory/MEMORY.md`
 
 ## Invariants
+0. (2026-09-17) The system may be wrong; it may not be silently wrong. A belief no
+   person has stood behind — a model's extraction, a migration, an agent's capture —
+   is capped at NOTE ("use, state the basis") however fresh and evidenced. Only the
+   owner confirming, rephrasing or restating it from their own channel lifts the cap.
+   Reviewing is the act that makes a belief usable silently.
 1. Reads are never naked — every belief arrives wearing its stance.
 2. Writes without `method` are rejected — the integrity firewall.
 3. Changes never overwrite silently — they append lineage events.
@@ -79,8 +84,23 @@ python engine.py list            # stances now
 python engine.py health          # what needs attention
 python engine.py verify <id>     # run an anchor
 python engine.py stamp --write-index
-python server.py                 # MCP stdio server
+python server.py                 # MCP stdio server (this library alone)
+python ../workbench/episteme_server.py   # the unified server (belief_* / argue_* / trace_*)
 ```
+
+## The library is a build (devops rule, 2026-09-16)
+Everything derived here is rebuildable from the archived sources and the log.
+- `EPISTEMIC_BRANCH=dev` selects a build under `builds/dev/` (own log,
+  projections, index; evidence store shared by symlink). `main` is what is
+  served and what writes `~/.claude/.../MEMORY.md`.
+- `make rebuild BRANCH=dev` rebuilds a branch from canonical events (never main).
+- `make check` is the promotion gate: chain, replay reproduces state,
+  projections match, evidence present; plus anchors, unsupported/contested,
+  unreviewed count, authorship census. `engine.py check --record` appends the
+  outcome as a `gate-check` run. `gate.sh` runs it on main and dev nightly
+  (launchd `com.jstop.epistemic-gate`, 03:30; log `~/Library/Logs/epistemic-gate.log`).
+- `recall_import.py` folds recall into a branch as grounded interpretations.
+- Sources are archived by `../workspaces-backup/archive-sources.sh` (S3).
 
 Design lineage: `~/.claude/plans/i-don-t-think-we-re-recursive-blossom.md`.
 Phase next: remote endpoint for claude.ai / ChatGPT connectors; silo import.

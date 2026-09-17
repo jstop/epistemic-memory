@@ -323,6 +323,16 @@ def stamped(b: dict, ref: dt.date | None = None,
         degraded_reason = dependency_degradation(b, by_id)
         if degraded_reason and STANCE_ORDER[st] > STANCE_ORDER["SUSPECT"]:
             st = "SUSPECT"
+    # Corrigibility rule (2026-09-17): the system may be wrong, but it must not
+    # be silently wrong. A claim no person has stood behind — a model's
+    # extraction, a migration, an agent's capture — is never RELY, however fresh
+    # and well-evidenced. It is capped at NOTE ("use, state the basis") until the
+    # owner confirms, rephrases, or restates it from their own channel, which is
+    # what lifts the cap. Reviewing is therefore the act that makes a belief
+    # usable silently, and an unreviewed belief always announces itself.
+    if st == "RELY" and (b.get("authorship") or {}).get("stood_behind_by") != OWNER:
+        st = "NOTE"
+        degraded_reason = degraded_reason or "not yet stood behind by the owner (unreviewed)"
     bucket, a = freshness(b, ref)
     return {
         "id": b.get("id"),
@@ -556,9 +566,15 @@ def record_run(*, kind: str, interpreter: str, inputs: list[str] | None = None,
     params = dict(params or {})
     params.setdefault("library_code", code_version())
     params.setdefault("branch", branch())
-    return get_log().record_run(kind=kind, interpreter=interpreter, inputs=inputs,
-                                outputs=outputs, params=params, note=note,
-                                run_id=run_id, started_at=started_at)
+    rid = get_log().record_run(kind=kind, interpreter=interpreter, inputs=inputs,
+                               outputs=outputs, params=params, note=note,
+                               run_id=run_id, started_at=started_at)
+    # a run is a write: projections follow it, so the next gate does not read drift
+    try:
+        regenerate_projections()
+    except Exception:
+        pass
+    return rid
 
 
 def runs(kind: str | None = None, interpreter: str | None = None) -> list[dict]:
@@ -876,8 +892,10 @@ def rebuild(into_branch: str, source_db: str | None = None) -> dict:
             "note": "evidence store is shared with the source branch (content-addressed, append-only)"}
 
 
-def check(run_anchors: bool = True, anchor_cost: str = "cheap") -> dict:
-    """The promotion gate. Returns a report; `ok` is False if any hard check fails."""
+def check(run_anchors: bool = True, anchor_cost: str = "cheap", record: bool = False) -> dict:
+    """The promotion gate. Returns a report; `ok` is False if any hard check fails.
+    With record=True the outcome is appended as a RunRecorded (kind gate-check),
+    so "the system might be stale" becomes "the gate said so, on this date"."""
     import tempfile
     log = get_log()
     report = {"branch": branch(), "db": db_path(), "code": code_version(), "hard": {}, "soft": {}}
@@ -923,6 +941,20 @@ def check(run_anchors: bool = True, anchor_cost: str = "cheap") -> dict:
     report["soft"]["authorship"] = authorship_census()
     report["ok"] = all(bool(x) for k, x in report["hard"].items()
                        if k in ("chain", "replay_reproduces_state", "projections_match", "evidence_content_present"))
+    report["unreviewed_beliefs"] = sum(
+        1 for v in views if (v.get("authorship") or {}).get("stood_behind_by") != OWNER and not v.get("retired"))
+    if record:
+        anchors = report["soft"].get("anchors") or {}
+        report["run_id"] = record_run(
+            kind="gate-check", interpreter=f"engine.check@{code_version()}",
+            outputs=[{"type": "gate-report", "ok": report["ok"], **{k: v for k, v in report["hard"].items() if isinstance(v, bool)}}],
+            params={"anchors_verified": anchors.get("verified"), "anchors_failed": anchors.get("failed"),
+                    "anchor_failures": [f["id"] for f in anchors.get("failures", [])][:20],
+                    "unsupported": len(report["soft"]["unsupported_beliefs"]),
+                    "contested": len(report["soft"]["contested_beliefs"]),
+                    "unreviewed": report["unreviewed_beliefs"],
+                    "beliefs": len(views)},
+            note="scheduled or manual gate run")
     return report
 
 
@@ -952,6 +984,7 @@ def main() -> int:
     ck = sub.add_parser("check", help="the promotion gate: chain, replay, projections, evidence, anchors")
     ck.add_argument("--no-anchors", action="store_true")
     ck.add_argument("--anchor-cost", default="cheap", choices=["cheap", "all"])
+    ck.add_argument("--record", action="store_true", help="append the outcome to the log as a gate-check run")
     args = p.parse_args()
 
     if args.cmd == "rebuild":
@@ -959,7 +992,7 @@ def main() -> int:
         print(_json.dumps(out, indent=2))
         return 0 if (out["state_identical"] and out["chain_ok"]) else 1
     if args.cmd == "check":
-        out = check(run_anchors=not args.no_anchors, anchor_cost=args.anchor_cost)
+        out = check(run_anchors=not args.no_anchors, anchor_cost=args.anchor_cost, record=args.record)
         print(_json.dumps(out, indent=2, default=str))
         return 0 if out["ok"] else 1
 

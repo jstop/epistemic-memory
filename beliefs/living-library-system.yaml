@@ -24,6 +24,29 @@ beliefs:
   - at: '2026-09-16'
     op: BeliefFormed
     actor: agent:unknown
+- id: library-corrigibility-rule
+  claim: Since 2026-09-17 the living library caps any belief no person has stood behind at NOTE ("use,
+    state the basis") regardless of freshness or evidence; only the owner confirming, rephrasing or restating
+    it from their own channel lifts the cap to RELY, and a nightly gate (launchd com.jstop.epistemic-gate,
+    03:30) runs the promotion checks on main and dev and records each outcome in the log as a gate-check
+    run
+  method: observed
+  volatility: structural
+  cluster: Living library system
+  anchor: grep -q 'not yet stood behind by the owner' ~/workspace/epistemic/memory/engine.py && launchctl
+    print gui/$(id -u)/com.jstop.epistemic-gate >/dev/null
+  anchor_cost: cheap
+  observed_at: '2026-09-17'
+  contested: false
+  unsupported: false
+  links:
+  - epist-source-archive
+  - episteme-roles-decided
+  - library-unvalidated-test-status
+  events:
+  - at: '2026-09-17'
+    op: BeliefFormed
+    actor: agent:unknown
 - id: library-design-doc
   claim: 'The Episteme design lineage / pipeline plan is ~/.claude/plans/robust-dazzling-avalanche.md
     (the previously recorded path i-don-t-think-we-re-recursive-blossom.md does not exist); the layer

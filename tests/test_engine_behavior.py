@@ -53,7 +53,10 @@ class EngineBehaviorTest(unittest.TestCase):
 
     def test_capture_and_recall_with_stance(self):
         out = self._capture(evidence_content="source excerpt")
-        self.assertEqual(out["stance"], "RELY")
+        # written by test:fixture, not the owner: fresh and evidenced, yet capped
+        # at NOTE until a person stands behind it (corrigibility rule)
+        self.assertEqual(out["stance"], "NOTE")
+        self.assertIn("not yet stood behind", out["degraded_reason"])
         beliefs = {b["id"]: b for b, _ in engine.load_all()}
         self.assertIn("b-1", beliefs)
         self.assertEqual(beliefs["b-1"]["claim"], "Test claim.")
@@ -131,7 +134,7 @@ class EngineBehaviorTest(unittest.TestCase):
             engine.record_verification("b-1", "verified")
         with patch.object(engine.subprocess, "run", return_value=subprocess.CompletedProcess("check", 0, "ok", "")):
             out = engine.record_verification("b-1", "verified")
-        self.assertEqual(out["stance"], "RELY")
+        self.assertEqual(out["stance"], "NOTE")  # reliance restored, still unreviewed by the owner
         self.assertFalse(out["verification_failed"])
         self.assertIsNotNone(out["verified_at"])
 
@@ -196,7 +199,37 @@ class EngineBehaviorTest(unittest.TestCase):
         path = engine.write_index()
         content = open(path).read()
         self.assertIn("Test claim.", content)
-        self.assertIn("RELY", content)
+        self.assertIn("NOTE", content)
+
+    # -- corrigibility: unreviewed is never RELY ---------------------------------
+
+    def test_unreviewed_belief_is_capped_at_note_until_owner_stands_behind_it(self):
+        out = self._capture(evidence_content="x")
+        self.assertEqual(out["stance"], "NOTE")
+        self.assertEqual(out["guidance"], "use, state the basis")
+        self.assertIsNone(out["authorship"]["stood_behind_by"])
+        # the owner restating it from their own channel lifts the cap
+        engine._LOGS.clear()
+        engine.CHANNEL_ACTOR = "owner"
+        try:
+            out = engine.reconcile("b-1", "Test claim.", note="confirmed by the owner")
+        finally:
+            engine.CHANNEL_ACTOR = None
+            engine._LOGS.clear()
+        self.assertEqual(out["authorship"]["stood_behind_by"], "owner")
+        self.assertEqual(out["stance"], "RELY")
+        self.assertIsNone(out["degraded_reason"])
+
+    def test_gate_check_can_record_its_outcome(self):
+        self._capture(evidence_content="x")
+        engine.regenerate_projections()
+        report = engine.check(run_anchors=False, record=True)
+        self.assertTrue(report["ok"])
+        self.assertEqual(report["unreviewed_beliefs"], 1)
+        run = engine.get_log().state()["runs"][report["run_id"]]
+        self.assertEqual(run["kind"], "gate-check")
+        self.assertTrue(run["outputs"][0]["ok"])
+        self.assertEqual(run["params"]["unreviewed"], 1)
 
     # -- projections -----------------------------------------------------------
 

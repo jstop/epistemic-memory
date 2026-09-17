@@ -51,6 +51,30 @@ beliefs:
   - at: '2026-09-10'
     op: BeliefFormed
     actor: migration:yaml-import
+- id: epist-episteme-server
+  claim: 'The unified Episteme MCP server is ~/workspace/epistemic/workbench/episteme_server.py: one server
+    composing the library''s belief_* tools, the workbench''s argue_* tools, and a trace_* lens (claim
+    by content hash/text, evidence, workspace, runs) plus episteme_status; it serves the library branch
+    named by EPISTEMIC_BRANCH and is wired into Claude Code and Claude Desktop as episteme-dev (branch
+    dev, agent:episteme-dev) beside the older per-system servers until dev is promoted; the workbench
+    web UI gained a read-only Library tab (beliefs + trace) and reads the same branch via EPISTEMIC_BRANCH'
+  method: observed
+  volatility: structural
+  cluster: Epistemic tooling layout
+  anchor: test -f ~/workspace/epistemic/workbench/episteme_server.py && grep -q '"episteme-dev"' ~/.claude.json
+  anchor_cost: cheap
+  observed_at: '2026-09-16'
+  contested: false
+  unsupported: false
+  links:
+  - epist-recall-folded-dev
+  - epist-workbench-web-ui
+  - episteme-roles-decided
+  - library-home
+  events:
+  - at: '2026-09-16'
+    op: BeliefFormed
+    actor: agent:unknown
 - id: epist-location
   claim: Epistemic tooling is consolidated under ~/workspace/epistemic/
   method: observed
