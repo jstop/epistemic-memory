@@ -877,13 +877,14 @@ def rebuild(into_branch: str, source_db: str | None = None) -> dict:
     # registers new evidence adds objects main does not reference, never
     # overwrites one.
     store_link = os.path.join(target_dir, "evidence_store")
+    link_target = os.path.relpath(os.path.abspath(content_dir()), target_dir)  # relative: survives moving the data dir
     if os.path.islink(store_link) or not os.path.exists(store_link):
         if os.path.islink(store_link):
             os.unlink(store_link)
-        os.symlink(os.path.abspath(content_dir()), store_link)
+        os.symlink(link_target, store_link)
     elif os.path.isdir(store_link) and not os.listdir(store_link):
         os.rmdir(store_link)
-        os.symlink(os.path.abspath(content_dir()), store_link)
+        os.symlink(link_target, store_link)
     # projections for the branch, without disturbing this process's paths
     env = {"EPISTEMIC_BRANCH": into_branch, "EPISTEMIC_BUILDS_DIR": builds_root(),
            "EPISTEMIC_ACTOR": os.environ.get("EPISTEMIC_ACTOR", "")}
