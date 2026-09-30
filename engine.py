@@ -939,12 +939,36 @@ def branches() -> list[dict]:
     return out
 
 
-def promote(from_branch: str, require_gate: bool = True) -> dict:
-    """Make a checked branch the served build. Preconditions: the branch exists
-    and (by default) its most recent gate run passed. main's current database
-    is kept under builds/_backups/ before it is replaced; the promotion is
-    recorded as a run in the new main. Refuses to promote main onto itself."""
-    import shutil
+def _chain_head(db: str) -> tuple[int, str] | None:
+    import sqlite3
+    c = sqlite3.connect(db)
+    try:
+        row = c.execute("SELECT sequence, event_hash FROM events ORDER BY sequence DESC LIMIT 1").fetchone()
+        return (int(row[0]), row[1]) if row else None
+    finally:
+        c.close()
+
+
+def _has_event(db: str, sequence: int, event_hash: str) -> bool:
+    import sqlite3
+    c = sqlite3.connect(db)
+    try:
+        return c.execute("SELECT 1 FROM events WHERE sequence=? AND event_hash=?",
+                         (sequence, event_hash)).fetchone() is not None
+    finally:
+        c.close()
+
+
+def promote(from_branch: str, require_gate: bool = True, force: bool = False) -> dict:
+    """Make a checked branch the served build. Preconditions: the branch exists,
+    (by default) its most recent gate run passed, and its log CONTAINS main's
+    current chain head — otherwise events written to main since the branch was
+    cut would silently vanish; `force=True` overrides that, on record.
+    main's current database is kept under builds/_backups/ (a consistent sqlite
+    backup) and then overwritten IN PLACE through the sqlite backup API, so the
+    file keeps its identity: processes holding main open see the new content on
+    their next transaction instead of writing into a deleted inode. The
+    promotion is recorded as a run in the new main. Refuses main onto itself."""
     if from_branch == "main":
         raise ValueError("promote takes a non-main branch")
     src_db = os.path.join(build_dir(from_branch), "canonical.db")
@@ -955,17 +979,33 @@ def promote(from_branch: str, require_gate: bool = True) -> dict:
     if require_gate and not (g and g.get("ok")):
         raise ValueError(f"branch '{from_branch}' has no passing gate run; run the gate first")
     main_db = main_db_path()
+    head = _chain_head(main_db) if os.path.exists(main_db) else None
+    if head and not _has_event(src_db, *head):
+        if not force:
+            raise ValueError(
+                f"branch '{from_branch}' does not contain main's chain head (sequence {head[0]}); "
+                f"main has events the branch lacks — rebuild the branch from main first, or promote with force=True")
     backups = os.path.join(builds_root(), "_backups")
     os.makedirs(backups, exist_ok=True)
     stamp = now_iso().replace(":", "").replace("-", "")[:15]
     backup = os.path.join(backups, f"main-{stamp}.db")
-    if os.path.exists(main_db):
-        shutil.copy2(main_db, backup)
-    # copy the branch's db into main via sqlite backup for a consistent file
     import sqlite3
-    src = sqlite3.connect(src_db); dst = sqlite3.connect(main_db + ".promoting")
-    src.backup(dst); src.close(); dst.close()
-    os.replace(main_db + ".promoting", main_db)
+    if os.path.exists(main_db):
+        cur = sqlite3.connect(main_db); bk = sqlite3.connect(backup)
+        cur.backup(bk); bk.close(); cur.close()
+    # overwrite main's content in place (never os.replace under open connections)
+    src = sqlite3.connect(src_db); dst = sqlite3.connect(main_db)
+    try:
+        src.backup(dst)
+    finally:
+        src.close(); dst.close()
+    for key in list(_LOGS):                      # keyed (db_path, content_dir)
+        if os.path.abspath(str(key[0])) == os.path.abspath(main_db):
+            try:
+                _LOGS[key].close()
+            except Exception:
+                pass
+            _LOGS.pop(key, None)
     # projections + index for main, in a subprocess (this process may be on a
     # branch). Explicit path overrides (tests, relocated stores) are kept; only
     # the branch selection is dropped so the subprocess is on main.
@@ -979,7 +1019,8 @@ def promote(from_branch: str, require_gate: bool = True) -> dict:
     log = CanonicalLog(main_db, content_dir(), actor=resolve_actor())
     rid = log.record_run(kind="promote", interpreter=f"engine.promote@{code_version()}",
                          outputs=[{"type": "build", "id": "main", "from": from_branch}],
-                         params={"from": from_branch, "backup": backup, "gate_run_at": (g or {}).get("recorded_at")},
+                         params={"from": from_branch, "backup": backup, "gate_run_at": (g or {}).get("recorded_at"),
+                                 "main_head_before": head, "forced": bool(force and head and not _has_event(src_db, *head))},
                          note=f"branch {from_branch} promoted to main")
     log.close()
     return {"ok": True, "from": from_branch, "backup": backup, "run_id": rid}

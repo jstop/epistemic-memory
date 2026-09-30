@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import sqlite3
 import threading
 import uuid
@@ -184,9 +185,18 @@ class CanonicalLog:
         # One connection, usable from any thread; every read and write goes through
         # self._lock, so callers on different threads (an MCP server, the
         # workbench bridge's executor) serialise rather than corrupt.
-        self.conn = sqlite3.connect(str(self.db_path), check_same_thread=False)
+        # busy_timeout: a second writer waits instead of failing "database is locked";
+        # WAL: readers never block the writer and a crash cannot leave a half-written
+        # rollback journal. Both are safe for a single-host, multi-process library.
+        self.conn = sqlite3.connect(str(self.db_path), check_same_thread=False,
+                                    timeout=float(os.environ.get("EPISTEMIC_DB_BUSY_TIMEOUT", "30")))
         self._lock = threading.RLock()
         self.conn.row_factory = sqlite3.Row
+        try:
+            self.conn.execute("PRAGMA journal_mode=WAL")
+            self.conn.execute("PRAGMA synchronous=NORMAL")
+        except sqlite3.OperationalError:
+            pass  # read-only media or an exotic filesystem: keep the default journal
         self.conn.executescript(_SCHEMA)
         self.conn.commit()
 
