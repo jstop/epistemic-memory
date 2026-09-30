@@ -4,7 +4,7 @@ version = "2026.9.17"
 description = "The living library: canonical event substrate, beliefs with stance, interpretations, runs, builds and the gate"
 requires-python = ">=3.12"
 dependencies = [
-  "mcp>=1.2",
+  "mcp>=1.9,<2",
   "pyyaml>=6",
 ]
 
